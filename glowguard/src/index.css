@@ -1,0 +1,124 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html { scroll-behavior: smooth; }
+
+body {
+  @apply bg-gradient-to-br from-cream to-gg-50 text-ink font-sans min-h-screen;
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full font-bold text-sm transition-all duration-200 select-none;
+  }
+  .btn-primary {
+    @apply btn text-white border-0 bg-gradient-to-br from-gg-600 to-gg-500 shadow-[0_8px_20px_rgba(34,197,94,.35)] hover:-translate-y-0.5 hover:shadow-[0_12px_26px_rgba(34,197,94,.45)] active:translate-y-0;
+  }
+  .btn-ghost {
+    @apply btn bg-white border-[1.5px] border-gg-600 text-gg-700 hover:bg-gg-600 hover:text-white;
+  }
+  .btn-outline {
+    @apply btn bg-white border-[1.5px] border-gg-300 text-gg-700 font-semibold hover:bg-gg-100;
+  }
+  .btn-danger {
+    @apply btn bg-white border-[1.5px] border-red-400 text-red-600 hover:bg-red-500 hover:text-white hover:border-red-500;
+  }
+  /* Standard inner-page container: same width as the navbar (max-w-6xl),
+     same gutters, and bottom room for the floating mobile nav bar. */
+  .page {
+    @apply mx-auto w-full max-w-6xl px-4 pt-8 pb-28 sm:px-6 sm:pt-10 md:pb-14;
+  }
+  .card {
+    @apply bg-white border border-gg-100 rounded-2xl shadow-card;
+  }
+  .input {
+    @apply w-full px-4 py-3 rounded-xl border-[1.5px] border-gg-200 text-sm text-ink bg-white
+      focus:outline-none focus:border-gg-600 focus:ring-4 focus:ring-gg-600/10 transition;
+  }
+  .label {
+    @apply block text-[13px] font-bold text-gg-800 mb-1.5;
+  }
+  .badge-am { @apply inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-extrabold bg-amber-100 text-amber-700; }
+  .badge-pm { @apply inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-extrabold bg-indigo-100 text-indigo-700; }
+}
+
+
+button { font: inherit; }
+
+/* ------------------------------------------------------------------ */
+/*  DARK MODE                                                          */
+/*  Written as plain CSS (not Tailwind's `dark:` variant) since this   */
+/*  project's tailwind.config isn't part of these files, so we can't   */
+/*  assume `darkMode: 'class'` is set there. Toggling `.dark` on <html>*/
+/*  (see AppContext) is enough to trigger these rules on their own.    */
+/* ------------------------------------------------------------------ */
+html.dark body {
+  @apply bg-none bg-[#12181a] text-[#e7ede9];
+}
+
+html.dark .card,
+html.dark .bg-white {
+  background-color: #1b2320 !important;
+}
+
+html.dark .card {
+  border-color: #2a352f !important;
+}
+
+html.dark .input {
+  background-color: #1b2320 !important;
+  border-color: #2a352f !important;
+  color: #e7ede9 !important;
+}
+
+html.dark .text-ink,
+html.dark .text-\[\#202621\],
+html.dark .text-\[\#263129\] {
+  color: #e7ede9 !important;
+}
+
+html.dark .text-muted,
+html.dark .text-gray-500,
+html.dark .text-\[\#59645d\],
+html.dark .text-\[\#667169\],
+html.dark .text-\[\#647068\] {
+  color: #9ba8a1 !important;
+}
+
+html.dark .border-gg-100,
+html.dark .border-\[\#dfe6e1\],
+html.dark .border-\[\#d9e0db\],
+html.dark .border-\[\#cfd7d1\] {
+  border-color: #2a352f !important;
+}
+
+html.dark .bg-\[\#f5f9f6\],
+html.dark .bg-\[\#f8faf8\],
+html.dark .bg-\[\#eef2ed\] {
+  background-color: #171f1c !important;
+}
+
+html.dark .account-card {
+  background-color: #1f2a24 !important;
+  border-color: #2a352f !important;
+}
+
+/* Routine page — "Your morning/night skincare routine" panel.
+   In light mode it is a pale green tint (bg-gg-100/70); in dark mode that tint
+   stayed light while the text switched to light colours, so it was unreadable. */
+html.dark .bg-gg-100\/70 {
+  background-color: #202b26 !important;
+  border-color: #2f3c35 !important;
+}
+
+/* Empty-state box inside that panel */
+html.dark .bg-white\/80 {
+  background-color: #1b2320 !important;
+}
+
+/* Hover highlight in dropdown menus (routine "⋯" menu, profile menu):
+   the light hover fill made the light text unreadable. */
+html.dark .hover\:bg-gg-50:hover {
+  background-color: #26332c !important;
+}
