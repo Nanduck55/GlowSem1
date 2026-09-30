@@ -10,34 +10,42 @@ $email = strtolower(trim($data['email'] ?? ''));
 $password = (string) ($data['password'] ?? '');
 
 if ($name === '' || $email === '' || $password === '') {
-    json_error('Name, email, and password are required.');
+    json_error('Name, email, and password are required.', 400);
 }
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    json_error('Please enter a valid email address.');
+    json_error('Please enter a valid email address.', 422);
 }
 if (strlen($password) < 6) {
-    json_error('Password must contain at least 6 characters.');
+    json_error('Password must contain at least 6 characters.', 422);
 }
 
-// Updated 'id' to 'user_id' to match your schema
-$check = $pdo->prepare('SELECT user_id FROM users WHERE email = :email');
+$check = $pdo->prepare('SELECT user_id FROM users WHERE LOWER(email) = LOWER(:email)');
 $check->execute(['email' => $email]);
 if ($check->fetch()) {
     json_error('An account with that email already exists.', 409);
 }
 
-$hash = password_hash($password, PASSWORD_DEFAULT);
+$hash = password_hash($password, PASSWORD_BCRYPT);
 
-$insert = $pdo->prepare(
-    'INSERT INTO users (full_name, email, password_hash) VALUES (:name, :email, :hash)'
-);
-$insert->execute(['name' => $name, 'email' => $email, 'hash' => $hash]);
-$userId = (int) $pdo->lastInsertId();
+try {
+    $pdo->beginTransaction();
 
-$stmt = $pdo->prepare('SELECT * FROM users WHERE user_id = :id');
-$stmt->execute(['id' => $userId]);
-$user = $stmt->fetch();
+    $insert = $pdo->prepare(
+        "INSERT INTO users (full_name, email, password_hash, role, status)
+         VALUES (:name, :email, :hash, 'user', 'active')"
+    );
+    $insert->execute(['name' => $name, 'email' => $email, 'hash' => $hash]);
+    $userId = (int) $pdo->lastInsertId();
 
-$token = issue_token($pdo, $userId);
+    $stmt = $pdo->prepare('SELECT user_id, full_name, email, role, status, skin_type, routine_goal, date_joined FROM users WHERE user_id = :id');
+    $stmt->execute(['id' => $userId]);
+    $userRow = $stmt->fetch(PDO::FETCH_ASSOC);
 
-json_out(['token' => $token, 'user' => public_user($user)], 201);
+    $token = issue_token($pdo, $userId);
+
+    $pdo->commit();
+    json_out(['token' => $token, 'user' => public_user(normalize_user($userRow))], 201);
+} catch (Exception $e) {
+    if ($pdo->inTransaction()) $pdo->rollBack();
+    json_error('Registration failed. Please try again.', 500);
+}

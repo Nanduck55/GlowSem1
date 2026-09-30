@@ -94,7 +94,9 @@ export default function ProductForm({ product, onSaved, onCancel }) {
             <span aria-hidden="true">⚠</span> Ingredient Clash Warning
           </p>
           {previewClashes.map((r) => (
-            <p key={r.id} className="text-xs text-amber-800 leading-relaxed mt-1">{r.message}</p>
+            <p key={r.id} className="text-xs text-amber-800 leading-relaxed mt-1">
+              {r.severity && <b>{r.severity}: </b>}{r.message}
+            </p>
           ))}
         </div>
       )}

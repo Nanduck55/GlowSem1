@@ -323,9 +323,14 @@ export default function Auth() {
 
   useEffect(() => {
     if (user) {
-      navigate(user.role === 'admin' ? '/admin/users' : '/routine', {
-        replace: true,
-      })
+      navigate(
+        user.role === 'admin'
+          ? '/admin/users'
+          : user.role === 'consultant'
+            ? '/consultant/rules'
+            : '/routine',
+        { replace: true }
+      )
     }
 
     return () => {
@@ -380,85 +385,132 @@ export default function Auth() {
   ------------------------------------------------------- */
 
   const submit = async (event) => {
-    event.preventDefault()
+  event.preventDefault()
 
-    if (busy) return
+  if (busy) return
 
-    const name = form.name.trim()
-    const email = form.email.trim()
-    const password = form.password
-    const confirmPassword = form.confirm
+  const name = form.name.trim()
+  const email = form.email.trim()
+  const password = form.password
+  const confirmPassword = form.confirm
 
-    /* Validation */
-    if (mode === 'register' && !name) {
-      showToast('Please enter your name.', false)
-      return
-    }
-
-    if (!email) {
-      showToast('Please enter your email address.', false)
-      return
-    }
-
-    if (!password) {
-      showToast(
-        mode === 'login'
-          ? 'Please enter your password.'
-          : 'Please create a password.',
-        false
-      )
-      return
-    }
-
-    if (mode === 'register' && password.length < 6) {
-      showToast(
-        'Password must contain at least 6 characters.',
-        false
-      )
-      return
-    }
-
-    if (
-      mode === 'register' &&
-      password !== confirmPassword
-    ) {
-      showToast('Passwords do not match.', false)
-      return
-    }
-
-    setBusy(true)
-
-    try {
-      // `remember` decides where the session token is kept (localStorage
-      // vs. sessionStorage) — see src/api/session.js. Not used to gate
-      // any data loading, so it isn't "mock" state.
-      const user =
-        mode === 'login'
-          ? await loginUser({ email, password }, remember)
-          : await registerUser({ name, email, password }, remember)
-
-      setUser(user)
-
-      notify(
-        mode === 'login'
-          ? 'Signed in successfully.'
-          : 'Account created successfully.'
-      )
-
-      navigate(user.role === 'admin' ? '/admin/users' : '/routine', {
-        replace: true,
-      })
-    } catch (error) {
-      showToast(
-        error.response?.data?.error ||
-          'Authentication failed. Check your credentials.',
-        false
-      )
-    } finally {
-      setBusy(false)
-    }
+  /* Validation */
+  if (mode === 'register' && !name) {
+    showToast('Please enter your name.', false)
+    return
   }
 
+  if (!email) {
+    showToast('Please enter your email address.', false)
+    return
+  }
+
+  if (!password) {
+    showToast(
+      mode === 'login'
+        ? 'Please enter your password.'
+        : 'Please create a password.',
+      false
+    )
+    return
+  }
+
+  if (mode === 'register' && password.length < 6) {
+    showToast(
+      'Password must contain at least 6 characters.',
+      false
+    )
+    return
+  }
+
+  if (mode === 'register' && password !== confirmPassword) {
+    showToast('Passwords do not match.', false)
+    return
+  }
+
+  setBusy(true)
+
+  try {
+    /* =====================================================
+       REGISTER
+       Create account ONLY.
+       Do NOT log the user in automatically.
+    ===================================================== */
+    if (mode === 'register') {
+      await registerUser({
+        name,
+        email,
+        password,
+      })
+
+      // Remembers that this email just registered, so their very next
+      // login (the first one, since register doesn't auto sign in) is
+      // routed to the /welcome onboarding page instead of straight to
+      // /routine. Cleared as soon as that first login happens below.
+      localStorage.setItem(`gg_new_signup:${email.toLowerCase()}`, '1')
+
+      showToast(
+        'Account created successfully. Please sign in.',
+        true
+      )
+
+      setForm({
+        name: '',
+        email: email,
+        password: '',
+        confirm: '',
+      })
+
+      // Return to login screen
+      setMode('login')
+
+      return
+    }
+
+    /* =====================================================
+       LOGIN
+    ===================================================== */
+    const loggedInUser = await loginUser(
+      { email, password },
+      remember
+    )
+
+    setUser(loggedInUser)
+
+    notify('Signed in successfully.')
+
+    const newSignupKey = `gg_new_signup:${email.toLowerCase()}`
+    const isFirstLoginAfterSignup =
+      loggedInUser.role !== 'admin' &&
+      loggedInUser.role !== 'consultant' &&
+      localStorage.getItem(newSignupKey) === '1'
+
+    if (isFirstLoginAfterSignup) {
+      localStorage.removeItem(newSignupKey)
+    }
+
+    navigate(
+      loggedInUser.role === 'admin'
+        ? '/admin/users'
+        : loggedInUser.role === 'consultant'
+          ? '/consultant/rules'
+          : isFirstLoginAfterSignup
+            ? '/welcome'
+            : '/routine',
+      {
+        replace: true,
+      }
+    )
+  } catch (error) {
+    showToast(
+      error.response?.data?.error ||
+        'Authentication failed. Check your credentials.',
+      false
+    )
+  } finally {
+    setBusy(false)
+  }
+}
   return (
     <div className="relative min-h-screen overflow-x-hidden font-sans text-ink">
 
@@ -592,10 +644,9 @@ export default function Auth() {
                 <button
                   type="button"
                   onClick={() =>
-                    showToast(
-                      'Password recovery will be available here.',
-                      false
-                    )
+                    navigate('/reset-password', {
+                      state: { email: form.email.trim() },
+                    })
                   }
                   className="rounded-md px-1.5 py-1 text-[11px] font-semibold text-gg-700 transition hover:bg-gg-500/5 hover:text-gg-900 focus:outline-none focus:ring-2 focus:ring-gg-500/30 max-[380px]:px-1 max-[380px]:text-[10px]"
                 >

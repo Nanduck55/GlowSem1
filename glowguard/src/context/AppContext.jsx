@@ -1,8 +1,9 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import {
   fetchProducts, saveProduct, deleteProduct, fetchRoutine, addToRoutine,
-  updateRoutineItem, removeFromRoutine, fetchTracker, restoreSession,
+  updateRoutineItem, removeFromRoutine, setRoutinePeriodRemoved, fetchTracker, restoreSession,
   fetchAdminData, addIngredient, deleteIngredient, addClashRule, updateClashRule, deleteClashRule,
+  fetchRecommendations, addRecommendation, updateRecommendation, deleteRecommendation,
 } from '../api/services'
 
 const AppCtx = createContext(null)
@@ -17,6 +18,10 @@ export function AppProvider({ children }) {
   const [products, setProducts] = useState([])
   const [rules, setRules] = useState([])
   const [ingredients, setIngredients] = useState([])
+  // GlowCouncil recommendations. The API only returns the visible ones to
+  // regular users; Beauty Consultants get everything (including hidden).
+  const [recommendations, setRecommendations] = useState([])
+  const [recsLoaded, setRecsLoaded] = useState(false)
   const [toast, setToast] = useState(null)
   // True once the first products/rules fetch has finished (success or fail).
   const [dataLoaded, setDataLoaded] = useState(false)
@@ -30,10 +35,11 @@ export function AppProvider({ children }) {
   // Dark mode is a per-account preference, not a per-browser one — it's
   // keyed by user id so that on a shared device, User A turning dark mode
   // on doesn't carry over to User B's session.
-  const osPrefersDark = () => window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false
   const darkModeKey = (u) => `gg_dark_mode:${u.id}`
 
-  const [darkMode, setDarkMode] = useState(() => osPrefersDark())
+  // Light mode is the default for a new account.
+  // A saved per-user preference still takes priority on later visits.
+  const [darkMode, setDarkMode] = useState(false)
 
   // Whenever the signed-in user changes (login, or switching accounts on the
   // same browser), load THAT account's own saved preference instead of
@@ -41,7 +47,7 @@ export function AppProvider({ children }) {
   useEffect(() => {
     if (!user) return
     const saved = localStorage.getItem(darkModeKey(user))
-    setDarkMode(saved !== null ? saved === 'true' : osPrefersDark())
+    setDarkMode(saved !== null ? saved === 'true' : false)
   }, [user?.id])
 
   // Only saves the preference for the current account. Whether dark mode is
@@ -94,6 +100,28 @@ export function AppProvider({ children }) {
 
   useEffect(() => { if (user) loadAll() }, [user, loadAll])
 
+  // Recommendations load on their own (not inside loadAll) so a problem with
+  // them can never blank out the shelf, rules or ingredients above.
+  const loadRecommendations = useCallback(async () => {
+    try {
+      const recs = await fetchRecommendations()
+      setRecommendations(Array.isArray(recs) ? recs : [])
+    } catch (error) {
+      console.error('Failed to load GlowCouncil recommendations:', error)
+      setRecommendations([])
+    } finally {
+      setRecsLoaded(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (user) loadRecommendations()
+    else {
+      setRecommendations([])
+      setRecsLoaded(false)
+    }
+  }, [user, loadRecommendations])
+
   /* ---------------- product actions ---------------- */
   const saveProductAction = async (product) => {
     const saved = await saveProduct(product)
@@ -113,8 +141,14 @@ export function AppProvider({ children }) {
     await addToRoutine(date, productId)
     notify('Added to routine.')
   }
-  const toggleComplete = async (date, productId, completed) => {
-    await updateRoutineItem(date, productId, { completed })
+  const toggleComplete = async (date, productId, completed, timeOfDay) => {
+    await updateRoutineItem(date, productId, { completed, timeOfDay })
+    // Keep each product's usage count (Routine Insights) current.
+    fetchProducts().then((list) => Array.isArray(list) && setProducts(list)).catch(() => {})
+  }
+  // Take a product out of just AM or just PM for a day (or put it back).
+  const setPeriodRemoved = async (date, productId, period, removed) => {
+    await setRoutinePeriodRemoved(date, productId, period, removed)
   }
   const removeFromRoutineAction = async (date, productId) => {
     await removeFromRoutine(date, productId)
@@ -131,6 +165,11 @@ export function AppProvider({ children }) {
   const updateClashRuleAction = async (rule) => { await updateClashRule(rule); await loadAll() }
   const deleteClashRuleAction = async (id) => { await deleteClashRule(id); await loadAll() }
 
+  /* ---------------- curation actions (Beauty Consultant) ---------------- */
+  const addRecommendationAction = async (rec) => { await addRecommendation(rec); await loadRecommendations() }
+  const updateRecommendationAction = async (rec) => { await updateRecommendation(rec); await loadRecommendations() }
+  const deleteRecommendationAction = async (id) => { await deleteRecommendation(id); await loadRecommendations() }
+
   return (
     <AppCtx.Provider value={{
       user, setUser, checkingSession,
@@ -138,10 +177,12 @@ export function AppProvider({ children }) {
       darkMode, toggleDarkMode,
       saveProduct: saveProductAction, deleteProduct: deleteProductAction,
       loadRoutine, addToRoutine: addToRoutineAction,
-      toggleComplete, removeFromRoutine: removeFromRoutineAction,
+      toggleComplete, removeFromRoutine: removeFromRoutineAction, setPeriodRemoved,
       loadTracker,
       addIngredient: addIngredientAction, deleteIngredient: deleteIngredientAction,
       addClashRule: addClashRuleAction, updateClashRule: updateClashRuleAction, deleteClashRule: deleteClashRuleAction,
+      recommendations, recsLoaded,
+      addRecommendation: addRecommendationAction, updateRecommendation: updateRecommendationAction, deleteRecommendation: deleteRecommendationAction,
       notify,
     }}>
       {children}

@@ -122,3 +122,9 @@ html.dark .bg-white\/80 {
 html.dark .hover\:bg-gg-50:hover {
   background-color: #26332c !important;
 }
+
+/* GlowCouncil recommendations page — serif headings are dark green in light
+   mode, so they need a light tint on the dark background. */
+html.dark .rec-heading {
+  color: #cfe3d6 !important;
+}

@@ -3,7 +3,8 @@ import { Link, useLocation } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { updateProfile } from '../api/services'
 
-import heroBg from '../assets/landing/land bg.png'
+import heroBg from '../assets/landing/land bg.jpg'
+import heroBgMobile from '../assets/landing/land bg mobile.jpg'
 
 import addProducts from '../assets/landing/add-products.png';
 import buildRoutine from '../assets/landing/build-routine.png';
@@ -468,7 +469,10 @@ function SkinQuiz() {
         ))}
       </div>
       {user ? (
-        <Link to="/account" className="btn-primary w-full">View My Account</Link>
+        <>
+          <Link to="/recommendations" className="btn-primary w-full">See Products For My Skin</Link>
+          <Link to="/account" className="btn-outline w-full mt-3">View My Account</Link>
+        </>
       ) : (
         <Link to="/auth" className="btn-primary w-full">Create My GlowGuard Account</Link>
       )}
@@ -614,56 +618,73 @@ export default function Landing() {
       )}
 
       <section
-        id="home"
-        className={`relative min-h-screen grid place-items-center overflow-hidden px-5 pb-20 bg-center bg-cover bg-fixed max-sm:bg-scroll ${user ? 'pt-14' : 'pt-32'}`}
-        style={{
-          backgroundImage: `url("${heroBg}")`,
-        }}
+  id="home"
+  className={`relative min-h-screen grid place-items-center overflow-hidden px-5 pb-20 ${user ? 'pt-14' : 'pt-32'}`}
+>
+  {/* Desktop background */}
+  <div
+    className="absolute inset-0 hidden sm:block bg-center bg-cover bg-fixed"
+    style={{
+      backgroundImage: `url("${heroBg}")`,
+    }}
+    aria-hidden="true"
+  />
+
+  {/* Mobile background */}
+  <div
+    className="absolute inset-0 block sm:hidden bg-center bg-cover"
+    style={{
+      backgroundImage: `url("${heroBgMobile}")`,
+    }}
+    aria-hidden="true"
+  />
+
+  {/* Hero content */}
+  <div className="relative z-10 w-full max-w-5xl text-center text-black">
+
+    <h1 className="font-serif italic font-semibold text-[clamp(3rem,7vw,5.4rem)] leading-[0.98] tracking-tight mb-6">
+      Protection for your
+      <span className="block text-[#060606]">Complexion.</span>
+    </h1>
+
+    <p className="max-w-3xl mx-auto text-black/90 text-base sm:text-lg leading-8">
+      Organize your products, build personalized AM/PM routines, track your
+      progress, and check ingredient conflicts — all in one simple skincare
+      companion.
+    </p>
+
+    <div className="flex flex-wrap justify-center gap-4 mt-9">
+      <Link to="/auth" className="btn-primary !px-9 !py-3.5 shadow-lg">
+        Get Started
+      </Link>
+
+      <button
+        type="button"
+        onClick={() => goTo('quiz')}
+        className="btn !px-9 !py-3.5 bg-white text-gg-800 hover:bg-gg-50"
       >
-        <div className="relative z-10 w-full max-w-5xl text-center text-black">
+        Take the Skin Quiz
+      </button>
+    </div>
+  </div>
 
-          <h1 className="font-serif italic font-semibold text-[clamp(3rem,7vw,5.4rem)] leading-[0.98] tracking-tight mb-6">
-            Protection for your
-            <span className="block text-[#060606]">Complexion.</span>
-          </h1>
+  <button
+    type="button"
+    onClick={() => goTo('features')}
+    className="absolute bottom-7 left-1/2 -translate-x-1/2 text-white/75 text-2xl animate-bounce z-10"
+    aria-label="Scroll to features"
+  >
+    ⌄
+  </button>
+</section>
 
-          <p className="max-w-3xl mx-auto text-black/90 text-base sm:text-lg leading-8">
-            Organize your products, build personalized AM/PM routines, track your
-            progress, and check ingredient conflicts — all in one simple skincare
-            companion.
-          </p>
-
-          <div className="flex flex-wrap justify-center gap-4 mt-9">
-            <Link to="/auth" className="btn-primary !px-9 !py-3.5 shadow-lg">
-              Get Started
-            </Link>
-            <button
-              type="button"
-              onClick={() => goTo('quiz')}
-              className="btn !px-9 !py-3.5 bg-white text-gg-800 hover:bg-gg-50"
-            >
-              Take the Skin Quiz
-            </button>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => goTo('features')}
-          className="absolute bottom-7 left-1/2 -translate-x-1/2 text-white/75 text-2xl animate-bounce"
-          aria-label="Scroll to features"
-        >
-          ⌄
-        </button>
-      </section>
-
-      <div className="px-6 py-4 bg-white border-y border-gg-100 text-center text-muted text-sm">
-        <strong className="text-gg-800">GlowGuard</strong> · Simple tools for a safer, more consistent skincare routine.
-      </div>
-
-      <section id="features" className="max-w-6xl mx-auto px-5 sm:px-6 py-20 sm:py-24">
-        <SectionHeading eyebrow="Everything in one place" title="Your skincare, organized." subtitle="Designed to make everyday skincare easier to understand, follow, and track. Click any card to learn more." />
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-10">
+      <section id="features" className="py-20 sm:py-24 px-5 sm:px-6 bg-white border-y border-gg-100">
+        <SectionHeading
+          eyebrow="Everything in one place"
+          title="Simple tools for a smarter skincare routine."
+          subtitle="Organize your products, build your routine, check ingredient safety, and keep track of your progress."
+        />
+        <div className="max-w-5xl mx-auto grid md:grid-cols-2 lg:grid-cols-4 gap-5 mt-10">
           {features.map((feature, index) => (
             <FeatureCard
               key={feature.title}
@@ -768,8 +789,57 @@ export default function Landing() {
         </div>
       </section>
 
-      <footer className="py-8 px-5 text-center text-muted text-xs border-t border-gg-100 bg-white">
-        <p>Made with care · <b>GlowGuard</b> © 2026 · Skincare guidance, not medical advice</p>
+      <footer className="bg-gg-900 text-white">
+        <div className="w-[calc(100%-2rem)] max-w-[1325px] mx-auto px-4 sm:px-6 lg:px-7 py-16 grid gap-8 justify-items-center sm:grid-cols-3 sm:items-center sm:justify-items-stretch">
+          <div className="text-center sm:text-left">
+            <p className="font-serif italic font-semibold text-2xl">GlowGuard</p>
+            <p className="text-gg-200 text-sm mt-1">Skincare. Safe. Simple.</p>
+          </div>
+
+          <div className="text-center sm:text-left">
+            <p className="font-bold text-sm mb-3">Quick Links</p>
+            <div className="flex flex-col gap-2 text-sm text-gg-200">
+              <button
+                type="button"
+                onClick={() => goTo('how-it-works')}
+                className="text-left hover:text-white transition"
+              >
+                How it works
+              </button>
+              <Link to="/auth" className="hover:text-white transition">Log In</Link>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-sm text-gg-200 mb-3 text-center">
+              Ready to understand your skin?
+            </p>
+
+            <div className="flex flex-col items-center gap-3">
+              <button
+                type="button"
+                onClick={() => goTo('quiz')}
+                className="px-5 py-2.5 rounded-full text-sm font-semibold bg-gg-700 hover:bg-gg-600 transition"
+              >
+                Take the Skin Profile Quiz
+              </button>
+
+              <button
+                type="button"
+                onClick={() => goTo('home')}
+                className="px-5 py-2.5 rounded-full text-sm font-semibold border border-white/40 hover:bg-white/10 transition"
+              >
+                Back to top
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t border-white/10 py-6 px-5 text-center text-gg-300 text-xs">
+          <p>
+            Made with care · <b>GlowGuard</b> © 2026 · Skincare guidance, not medical advice
+          </p>
+        </div>
       </footer>
     </div>
   )

@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { CATEGORIES } from '../api/services'
 import Modal from '../components/Modal'
@@ -6,11 +7,18 @@ import ProductForm from '../components/ProductForm'
 
 export default function Shelf() {
   const { products, saveProduct, deleteProduct } = useApp()
+  const location = useLocation()
 
   const [filter, setFilter] = useState('All')
   const [search, setSearch] = useState('')
-  const [showForm, setShowForm] = useState(false)
+  const [showForm, setShowForm] = useState(Boolean(location.state?.openAdd))
   const [editProduct, setEditProduct] = useState(null)
+
+  // Arriving from the Welcome page's "Add My First Product" button opens
+  // the modal immediately instead of landing on an empty shelf.
+  useEffect(() => {
+    if (location.state?.openAdd) setShowForm(true)
+  }, [location.state])
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase()

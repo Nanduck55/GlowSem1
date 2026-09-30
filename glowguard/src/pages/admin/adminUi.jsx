@@ -49,3 +49,11 @@ export const formatDate = (value) => {
 }
 
 export const padId = (id) => String(id).padStart(3, '0')
+
+// Human-readable label for a user's role. 'consultant' reads as "Beauty
+// Consultant" instead of just capitalizing the raw stored value.
+export function roleLabel(role) {
+  if (role === 'consultant') return 'Beauty Consultant'
+  if (role === 'admin') return 'Admin'
+  return 'User'
+}

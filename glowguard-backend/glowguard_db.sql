@@ -1,28 +1,10 @@
--- phpMyAdmin SQL Dump
--- version 5.2.1
--- https://www.phpmyadmin.net/
---
--- Host: 127.0.0.1
--- Generation Time: Sep 21, 2026 at 02:08 PM
--- Server version: 10.4.32-MariaDB
--- PHP Version: 8.2.12
+-- Database: `glowguard_db`
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
 
-
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!40101 SET NAMES utf8mb4 */;
-
---
--- Database: `glowguard_db`
---
-
 -- --------------------------------------------------------
-
 --
 -- Table structure for table `active_ingredients`
 --
@@ -349,6 +331,54 @@ ALTER TABLE `routine_products`
   ADD CONSTRAINT `routine_products_ibfk_2` FOREIGN KEY (`product_id`) REFERENCES `products` (`product_id`) ON DELETE CASCADE;
 COMMIT;
 
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+
+-- ------------------------------------------------------------------
+-- Starter reference data only (NOT demo/mock user data — no users or
+-- products are seeded; every account starts with an empty shelf).
+-- Safe to edit or delete from the /admin page once the app is running.
+-- Safe to run more than once: nothing is duplicated on re-import.
+-- Targets the real glowguard_db tables: active_ingredients and
+-- ingredient_clash_rules (which links ingredients by ID).
+-- ------------------------------------------------------------------
+SET NAMES utf8mb4;
+
+-- active_ingredients has no UNIQUE key on ingredient_name, so INSERT IGNORE
+-- would not prevent repeats. Each name is inserted only if it is missing.
+INSERT INTO active_ingredients (ingredient_name)
+SELECT v.n
+FROM (
+  SELECT 'Hyaluronic Acid' AS n
+  UNION ALL SELECT 'Retinol'
+  UNION ALL SELECT 'Salicylic Acid / BHA'
+  UNION ALL SELECT 'Glycolic Acid'
+  UNION ALL SELECT 'Centella'
+  UNION ALL SELECT 'Vitamin C'
+  UNION ALL SELECT 'Niacinamide'
+  UNION ALL SELECT 'None'
+) AS v
+WHERE NOT EXISTS (
+  SELECT 1 FROM active_ingredients a
+  WHERE a.ingredient_name = v.n COLLATE utf8mb4_general_ci
+);
+
+-- Clash rules reference ingredients by ID, so the IDs are looked up by name.
+-- A rule is only inserted if that ingredient pair isn't already present.
+INSERT INTO ingredient_clash_rules (ingredient_id_1, ingredient_id_2, warning_text)
+SELECT a.ingredient_id, b.ingredient_id, v.msg
+FROM (
+  SELECT 'Retinol' AS n1, 'Salicylic Acid / BHA' AS n2,
+         'Retinol + Salicylic Acid/BHA may increase irritation when used together in the same routine.' AS msg
+  UNION ALL
+  SELECT 'Retinol', 'Glycolic Acid',
+         'Retinol + Glycolic Acid (AHA) can over-exfoliate — separate into different routines or alternate days.'
+  UNION ALL
+  SELECT 'Vitamin C', 'Retinol',
+         'Vitamin C + Retinol can be irritating together — use Vitamin C in the AM and Retinol in the PM.'
+) AS v
+JOIN active_ingredients a ON a.ingredient_name = v.n1 COLLATE utf8mb4_general_ci
+JOIN active_ingredients b ON b.ingredient_name = v.n2 COLLATE utf8mb4_general_ci
+WHERE NOT EXISTS (
+  SELECT 1 FROM ingredient_clash_rules r
+  WHERE r.ingredient_id_1 = a.ingredient_id
+    AND r.ingredient_id_2 = b.ingredient_id
+);

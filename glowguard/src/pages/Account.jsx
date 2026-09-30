@@ -212,6 +212,16 @@ export default function Account() {
             </div>
 
             <Value>{skinType || 'Not set yet — take the quiz to find out'}</Value>
+
+            {skinType && (
+              <button
+                type="button"
+                onClick={() => navigate('/recommendations')}
+                className="mt-2 text-sm font-semibold text-[#3f6f52] underline underline-offset-2 hover:text-[#345c44]"
+              >
+                See products picked for your skin
+              </button>
+            )}
           </div>
 
           <Field label="Member Since">

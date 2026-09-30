@@ -20,6 +20,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
+// Any uncaught error (e.g. a SQL error) becomes a JSON 500 instead of an HTML
+// page, so the frontend can show a readable message and CORS headers still apply.
+set_exception_handler(function (Throwable $e) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Server error.', 'detail' => $e->getMessage()]);
+    exit;
+});
+
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/../lib/response.php';
 require_once __DIR__ . '/../lib/auth.php';

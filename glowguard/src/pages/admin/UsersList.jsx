@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { fetchUsers } from '../../api/services'
-import { PageTitle, StatusBadge, Loading, cardCls, inputCls, btnGreen, formatDate } from './adminUi'
+import { PageTitle, StatusBadge, Loading, cardCls, inputCls, btnGreen, formatDate, roleLabel } from './adminUi'
 
 function StatCard({ label, value }) {
   return (
@@ -60,6 +60,7 @@ export default function UsersList() {
           <option value="">Role</option>
           <option value="user">User</option>
           <option value="admin">Admin</option>
+          <option value="consultant">Beauty Consultant</option>
         </select>
         <select className={`${inputCls} sm:!w-auto !py-2`} value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="">Status</option>
@@ -92,7 +93,7 @@ export default function UsersList() {
                 <span className="justify-self-end md:order-4 md:justify-self-start"><StatusBadge active={u.active} /></span>
                 {/* role + joined: second line on phones */}
                 <span className="col-span-2 md:col-span-1 md:order-2 text-[#3d4a42] md:text-inherit">
-                  <span className="capitalize">{u.role}</span>
+                  <span>{roleLabel(u.role)}</span>
                   <span className="md:hidden"> · Joined {formatDate(u.createdAt)}</span>
                 </span>
                 <span className="hidden md:block md:order-3">{formatDate(u.createdAt)}</span>

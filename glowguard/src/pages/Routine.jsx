@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useApp } from '../context/AppContext'
-import { findClashes } from '../api/services'
+import { findClashes, skinTypeKey } from '../api/services'
 import Modal from '../components/Modal'
 import ProductForm from '../components/ProductForm'
 
@@ -41,8 +42,10 @@ export default function Routine() {
     addToRoutine,
     toggleComplete,
     removeFromRoutine,
+    setPeriodRemoved,
     saveProduct,
     deleteProduct,
+    notify,
   } = useApp()
 
   // --------------------------------------------------
@@ -55,6 +58,7 @@ export default function Routine() {
   const [editProduct, setEditProduct] = useState(null)
   const [addPicker, setAddPicker] = useState(false)
   const [menuFor, setMenuFor] = useState(null)
+  const [menuStyle, setMenuStyle] = useState({ top: 0, left: 0 })
 
   // AM / PM switch
   const [timeOfDay, setTimeOfDay] = useState(
@@ -102,6 +106,15 @@ export default function Routine() {
 
   useEffect(() => {
     const close = (e) => {
+      // Clicks on any "⋯" button or inside the dropdown are handled by
+      // their own onClick, so don't let this listener undo them.
+      if (
+        e.target.closest &&
+        e.target.closest('[data-routine-menu]')
+      ) {
+        return
+      }
+
       if (
         menuRef.current &&
         !menuRef.current.contains(e.target)
@@ -117,6 +130,22 @@ export default function Routine() {
     }
   }, [])
 
+  // The dropdown is positioned on screen, so close it if the page or
+  // the routine list scrolls (or the window resizes) underneath it.
+  useEffect(() => {
+    if (!menuFor) return undefined
+
+    const close = () => setMenuFor(null)
+
+    window.addEventListener('scroll', close, true)
+    window.addEventListener('resize', close)
+
+    return () => {
+      window.removeEventListener('scroll', close, true)
+      window.removeEventListener('resize', close)
+    }
+  }, [menuFor])
+
   // --------------------------------------------------
   // AM / PM INFORMATION
   // --------------------------------------------------
@@ -128,7 +157,7 @@ export default function Routine() {
     : 'Rise and Shine'
 
   const firstName =
-    user?.name?.split(' ')[0] ?? 'Jordan'
+    user?.name?.split(' ')[0] ?? 'there'
 
   const routineName =
     `${firstName}'s ${isPM ? 'Night' : 'Morning'} Routine`
@@ -145,6 +174,12 @@ export default function Routine() {
 
       if (!product) return false
 
+      // Removed from this period only (e.g. taken out of AM but still in PM).
+      // Saved in the database, so it comes back with the routine items.
+      if ((timeOfDay === 'PM' ? item.removedPM : item.removedAM) === true) {
+        return false
+      }
+
       const productTime =
         String(product.timeOfDay || '').toUpperCase()
 
@@ -155,7 +190,13 @@ export default function Routine() {
         productTime === 'BOTH' ||
         productTime === ''
       )
-    })
+    }).map((item) => ({
+      // AM and PM are completed separately: use the flag for the
+      // period currently shown.
+      ...item,
+      completed:
+        (timeOfDay === 'PM' ? item.completedPM : item.completedAM) === true,
+    }))
   }, [items, products, timeOfDay])
 
   // --------------------------------------------------
@@ -198,11 +239,14 @@ export default function Routine() {
   // MOST USED
   // --------------------------------------------------
 
+  // Counted from the routine_logs rows saved each time a product is ticked off.
   const mostUsed = useMemo(() => {
-    if (!products.length) return '—'
+    const used = products.filter((p) => (p.uses ?? 0) > 0)
 
-    return products.reduce(
-      (a, b) => (a.name > b.name ? a : b)
+    if (!used.length) return '—'
+
+    return used.reduce(
+      (a, b) => (b.uses > a.uses ? b : a)
     ).name
   }, [products])
 
@@ -212,7 +256,11 @@ export default function Routine() {
 
   const addProductFlow = async (p) => {
     try {
-      await saveProduct(p)
+      const saved = await saveProduct(p)
+
+      // The form's button is "Add to Routine": besides saving the product to
+      // the shelf, put it in the routine for the day being viewed.
+      await addToRoutine(dateKey, saved.id)
 
       setShowForm(false)
       setEditProduct(null)
@@ -245,13 +293,111 @@ export default function Routine() {
 
   const quickAdd = async (productId) => {
     try {
-      await addToRoutine(dateKey, productId)
+      const existing = items.find(
+        (i) => String(i.productId) === String(productId)
+      )
+
+      if (
+        existing &&
+        (timeOfDay === 'PM' ? existing.removedPM : existing.removedAM) === true
+      ) {
+        // Removed from this period only: the routine row is still there
+        // (it's still in the other period), so just bring it back.
+        await setPeriodRemoved(dateKey, productId, timeOfDay, false)
+      } else {
+        const rowExisted = Boolean(existing)
+
+        await addToRoutine(dateKey, productId)
+
+        // A "Both" product is saved as one routine row that AM and PM both
+        // read, so adding it here would also add it to the other period.
+        // Mark the other period as not included (saved in the database) so it
+        // only lands in the period being viewed.
+        const product = products.find(
+          (p) => String(p.id) === String(productId)
+        )
+        const productTime =
+          String(product?.timeOfDay || '').toUpperCase()
+
+        if (!rowExisted && (productTime === 'BOTH' || productTime === '')) {
+          await setPeriodRemoved(
+            dateKey,
+            productId,
+            timeOfDay === 'AM' ? 'PM' : 'AM',
+            true
+          )
+        }
+      }
 
       setAddPicker(false)
 
       await reload()
     } catch (error) {
       console.error('Failed to add product to routine:', error)
+    }
+  }
+
+  // --------------------------------------------------
+  // REMOVE FROM ROUTINE (only the AM or PM routine being viewed)
+  // --------------------------------------------------
+
+  const handleRemoveFromRoutine = async (p) => {
+    setMenuFor(null)
+
+    try {
+      const productTime =
+        String(p.timeOfDay || '').toUpperCase()
+
+      const otherPeriod = timeOfDay === 'AM' ? 'PM' : 'AM'
+
+      const item = items.find(
+        (i) => String(i.productId) === String(p.id)
+      )
+      const removedFromOther =
+        (otherPeriod === 'PM' ? item?.removedPM : item?.removedAM) === true
+
+      // AM-only / PM-only products only ever show in one routine, and a
+      // "Both" product already removed from the other period has nowhere
+      // left to show, so the routine row itself can go.
+      const onlyOnePeriod =
+        productTime === 'AM' || productTime === 'PM'
+
+      if (onlyOnePeriod || removedFromOther) {
+        // Deleting the row also clears any saved AM / PM removal for it.
+        await removeFromRoutine(dateKey, p.id)
+      } else {
+        // "Both" product: hide it from this period only (saved in the database).
+        await setPeriodRemoved(dateKey, p.id, timeOfDay, true)
+        notify('Removed from routine.', false)
+      }
+
+      await reload()
+    } catch (error) {
+      console.error('Failed to remove product from routine:', error)
+    }
+  }
+
+  // --------------------------------------------------
+  // DELETE PRODUCT (removes it from the shelf)
+  // --------------------------------------------------
+
+  const handleDeleteProduct = async (p) => {
+    setMenuFor(null)
+
+    if (
+      !confirm(
+        `Delete "${p.name}" from your shelf? It will also be removed from your routines.`
+      )
+    ) {
+      return
+    }
+
+    try {
+      await deleteProduct(p.id)
+
+      await reload()
+    } catch (error) {
+      console.error('Failed to delete product:', error)
     }
   }
 
@@ -312,7 +458,7 @@ export default function Routine() {
             aria-label={`Switch to ${timeOfDay === 'AM' ? 'PM' : 'AM'}`}
             className={`
       relative
-      w-[100px] h-[44px]
+      w-[76px] h-[32px]
       rounded-full
       overflow-hidden
       transition-colors duration-300
@@ -328,12 +474,12 @@ export default function Routine() {
               className={`
         absolute inset-0
         flex items-center
-        text-[18px]
+        text-[13px]
         font-normal
         transition-all duration-300
         ${timeOfDay === 'AM'
-                  ? 'justify-end pr-5 text-white'
-                  : 'justify-start pl-5 text-white'
+                  ? 'justify-end pr-3 text-white'
+                  : 'justify-start pl-3 text-white'
                 }
       `}
             >
@@ -345,18 +491,18 @@ export default function Routine() {
               className={`
         absolute
         top-[2px]
-        w-[40px] h-[40px]
+        w-[28px] h-[28px]
         rounded-full
         bg-[#f8f7ef]
         border border-[#e5e1d5]
         shadow-[0_1px_4px_rgba(0,0,0,0.12)]
         flex items-center justify-center
-        text-[21px]
+        text-[15px]
         text-[#2b2b2b]
         transition-all duration-300 ease-in-out
         ${timeOfDay === 'AM'
                   ? 'left-[2px]'
-                  : 'left-[58px]'
+                  : 'left-[46px]'
                 }
       `}
             >
@@ -651,7 +797,8 @@ export default function Routine() {
                           await toggleComplete(
                             dateKey,
                             p.id,
-                            !item.completed
+                            !item.completed,
+                            timeOfDay
                           )
 
                           await reload()
@@ -689,18 +836,48 @@ export default function Routine() {
                             ? menuRef
                             : null
                         }
+                        data-routine-menu
                         className="relative shrink-0"
                       >
 
                         <button
                           type="button"
-                          onClick={() =>
-                            setMenuFor(
-                              menuFor === p.id
-                                ? null
-                                : p.id
+                          onClick={(e) => {
+                            if (menuFor === p.id) {
+                              setMenuFor(null)
+                              return
+                            }
+
+                            // Position the dropdown relative to the screen so
+                            // the scrolling routine list can't clip it.
+                            const r =
+                              e.currentTarget.getBoundingClientRect()
+                            const MENU_W = 192 // w-48
+                            const MENU_H = 130
+                            const left = Math.max(
+                              8,
+                              Math.min(
+                                r.right - MENU_W,
+                                window.innerWidth - MENU_W - 8
+                              )
                             )
-                          }
+                            const openUp =
+                              r.bottom + MENU_H + 8 >
+                              window.innerHeight
+
+                            setMenuStyle(
+                              openUp
+                                ? {
+                                    left,
+                                    bottom:
+                                      window.innerHeight -
+                                      r.top +
+                                      4,
+                                  }
+                                : { left, top: r.bottom + 4 }
+                            )
+                            setMenuFor(p.id)
+                          }}
                           aria-label="Product options"
                           className="
                             text-muted
@@ -713,12 +890,13 @@ export default function Routine() {
                           ⋯
                         </button>
 
-                        {menuFor === p.id && (
-                          <div className="
-                            absolute
-                            right-0
-                            top-8
-                            z-30
+                        {menuFor === p.id && createPortal(
+                          <div
+                            data-routine-menu
+                            style={menuStyle}
+                            className="
+                            fixed
+                            z-50
                             w-48
                             card
                             !rounded-xl
@@ -756,16 +934,7 @@ export default function Routine() {
                                 py-2.5
                                 hover:bg-gg-50
                               "
-                              onClick={async () => {
-                                await removeFromRoutine(
-                                  dateKey,
-                                  p.id
-                                )
-
-                                setMenuFor(null)
-
-                                await reload()
-                              }}
+                              onClick={() => handleRemoveFromRoutine(p)}
                             >
                               Remove from routine
                             </button>
@@ -781,26 +950,13 @@ export default function Routine() {
                                 text-red-600
                                 hover:bg-red-50
                               "
-                              onClick={async () => {
-                                if (
-                                  confirm(
-                                    `Delete "${p.name}" from your shelf?`
-                                  )
-                                ) {
-                                  await deleteProduct(
-                                    p.id
-                                  )
-
-                                  setMenuFor(null)
-
-                                  await reload()
-                                }
-                              }}
+                              onClick={() => handleDeleteProduct(p)}
                             >
                               Delete
                             </button>
 
-                          </div>
+                          </div>,
+                          document.body
                         )}
 
                       </div>
@@ -879,7 +1035,7 @@ export default function Routine() {
               <p className="text-sm text-muted">
                 Skin Type:{' '}
                 <span className="text-ink font-semibold">
-                  Oily
+                  {skinTypeKey(user?.skinType) || '—'}
                 </span>
               </p>
 
@@ -926,6 +1082,7 @@ export default function Routine() {
                       mb-1
                     "
                   >
+                    {r.severity && <b>{r.severity}: </b>}
                     {r.message}
                   </p>
                 ))}

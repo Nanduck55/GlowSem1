@@ -3,12 +3,6 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { logoutUser } from '../../api/services'
 
-const ShieldIcon = (props) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 shrink-0" aria-hidden="true" {...props}>
-    <path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Zm0 5a2.6 2.6 0 1 1 0 5.2A2.6 2.6 0 0 1 12 7Zm0 11.2c-2 0-3.8-1-4.8-2.5.03-1.6 3.2-2.4 4.8-2.4s4.77.8 4.8 2.4c-1 1.5-2.8 2.5-4.8 2.5Z" />
-  </svg>
-)
-
 const LogoutIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 shrink-0" aria-hidden="true">
     <path d="M4 3h9v2H6v14h7v2H4V3Zm12.6 4.4L21.2 12l-4.6 4.6-1.4-1.4L17.4 13H9v-2h8.4l-2.2-2.2 1.4-1.4Z" />
@@ -27,16 +21,22 @@ const CloseIcon = () => (
   </svg>
 )
 
-const UsersIcon = () => (
+const RulesIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px] shrink-0" aria-hidden="true">
-    <path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-    <circle cx="9" cy="7" r="4" />
-    <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+    <path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z" />
+    <path d="m9 12 2 2 4-4" />
+  </svg>
+)
+
+const CurationIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-[18px] w-[18px] shrink-0" aria-hidden="true">
+    <path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.4 6.6 19.5l1.2-6L3.3 9.3l6.1-.7L12 3Z" />
   </svg>
 )
 
 const navItems = [
-  { to: '/admin/users', label: 'User Management', Icon: UsersIcon },
+  { to: '/consultant/rules', label: 'Safety Clash Rules', Icon: RulesIcon },
+  { to: '/consultant/curation', label: 'Curation', Icon: CurationIcon },
 ]
 
 function initials(name = '') {
@@ -45,7 +45,10 @@ function initials(name = '') {
   return (parts[0][0] + (parts[1]?.[0] ?? '')).toUpperCase()
 }
 
-export default function AdminLayout() {
+// Beauty Consultant portal — its own login, its own role, and (unlike the
+// Admin area) only the Safety Clash Rules and GlowCouncil Curation screens. Uses a rose/plum accent
+// instead of Admin's green so the two portals are visually distinct too.
+export default function ConsultantLayout() {
   const { user, setUser } = useApp()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
@@ -62,19 +65,17 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="gg-admin min-h-screen bg-white text-black">
+    <div className="gg-consultant min-h-screen bg-white text-black">
       {/* Poppins is used by the design; falls back to the system font if offline. */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
-        .gg-admin { font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif; }
+        .gg-consultant { font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif; }
       `}</style>
 
       <div className="md:flex">
         {/* ---------------- Sidebar ---------------- */}
-        {/* Desktop/tablet: a normal static column. Phones: an off-canvas drawer
-            triggered by the header's menu button, closed by default. */}
         <aside
-          className={`bg-[#17502f] text-white flex flex-col
+          className={`bg-[#5c1a45] text-white flex flex-col
             fixed inset-y-0 left-0 z-40 w-[78%] max-w-[280px] shadow-2xl
             transition-transform duration-200 ease-out
             ${open ? 'translate-x-0' : '-translate-x-full'}
@@ -82,9 +83,14 @@ export default function AdminLayout() {
             md:h-screen md:sticky md:top-0 md:translate-x-0 md:shadow-none`}
         >
           <div className="flex items-start justify-between gap-3 px-5 sm:px-6 pt-6 pb-6 md:pt-8 md:pb-10">
-            <p className="text-xl sm:text-2xl font-semibold leading-tight">
-              GlowGuard<br />Admin
-            </p>
+            <div className="min-w-0">
+              <p className="text-xl sm:text-2xl font-semibold leading-tight">
+                GlowGuard<br />Beauty Consultant
+              </p>
+              <p className="mt-3 text-xs sm:text-[13px] font-medium truncate">
+                Beauty Consultant: {user?.name}
+              </p>
+            </div>
             {/* Close button — phones only */}
             <button
               type="button"
@@ -113,11 +119,7 @@ export default function AdminLayout() {
             ))}
           </nav>
 
-          <div className="mt-auto bg-[#008030] rounded-tr-3xl px-5 py-5 space-y-3 text-sm">
-            <p className="flex items-center gap-2 font-medium">
-              <ShieldIcon />
-              <span className="truncate">Admin: {user?.name}</span>
-            </p>
+          <div className="mt-auto bg-[#7d2560] rounded-tr-3xl px-5 py-5 text-sm">
             <button type="button" onClick={logout} className="flex items-center gap-2 text-xs font-medium hover:underline">
               <LogoutIcon />
               Log Out
@@ -138,7 +140,7 @@ export default function AdminLayout() {
         {/* ---------------- Content ---------------- */}
         <div className="flex-1 min-w-0">
           {/* Phone header: menu button + brand + avatar */}
-          <header className="md:hidden sticky top-0 z-20 flex items-center gap-3 bg-[#17502f] text-white px-4 py-3">
+          <header className="md:hidden sticky top-0 z-20 flex items-center gap-3 bg-[#5c1a45] text-white px-4 py-3">
             <button
               type="button"
               onClick={() => setOpen(true)}
@@ -147,12 +149,12 @@ export default function AdminLayout() {
             >
               <MenuIcon />
             </button>
-            <p className="flex-1 text-base font-medium truncate">GlowGuard Admin</p>
+            <p className="flex-1 text-base font-medium truncate">GlowGuard Consultant</p>
             <button
               type="button"
-              onClick={() => goTo('/admin/users')}
+              onClick={() => goTo('/consultant/rules')}
               aria-label="Account"
-              className="h-8 w-8 shrink-0 rounded-full bg-[#008030] flex items-center justify-center text-xs font-semibold"
+              className="h-8 w-8 shrink-0 rounded-full bg-[#7d2560] flex items-center justify-center text-xs font-semibold"
             >
               {initials(user?.name)}
             </button>

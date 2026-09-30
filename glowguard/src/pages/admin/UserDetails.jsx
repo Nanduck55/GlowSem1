@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { fetchUser, setUserActive } from '../../api/services'
 import { useApp } from '../../context/AppContext'
-import { PageTitle, StatusBadge, Loading, cardCls, inputCls, btnRed, btnGreen, formatDate } from './adminUi'
+import { PageTitle, StatusBadge, Loading, cardCls, inputCls, btnRed, btnGreen, formatDate, roleLabel } from './adminUi'
 
 export default function UserDetails() {
   const { id } = useParams()
@@ -53,7 +53,7 @@ export default function UserDetails() {
             </div>
             <div>
               <p className="text-base sm:text-lg font-medium mb-1">Role</p>
-              <span className="inline-block rounded-md bg-[#41694b] text-white font-semibold px-4 py-1 capitalize">{u.role}</span>
+              <span className="inline-block rounded-md bg-[#41694b] text-white font-semibold px-4 py-1">{roleLabel(u.role)}</span>
             </div>
             <div>
               <p className="text-base sm:text-lg font-medium mb-1">Email</p>

@@ -36,7 +36,8 @@ function formatMonth(date) {
 }
 
 export default function Tracker() {
-  const { products, loadRoutine } = useApp()
+  const { products, loadRoutine, user } = useApp()
+  const firstName = user?.name?.trim()?.split(/\s+/)[0] || ''
 
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()))
   const [timeOfDay, setTimeOfDay] = useState('AM')
@@ -97,8 +98,11 @@ export default function Tracker() {
   const filteredProducts = useMemo(() => {
     const routine = routines[selectedDate] || []
 
+    // A product taken out of just this period (AM or PM) for the day isn't shown.
     const scheduledIds = new Set(
-      routine.map((entry) => String(entry.productId))
+      routine
+        .filter((entry) => (timeOfDay === 'PM' ? entry.removedPM : entry.removedAM) !== true)
+        .map((entry) => String(entry.productId))
     )
 
     return products.filter((product) => {
@@ -121,14 +125,17 @@ export default function Tracker() {
       (entry) => String(entry.productId) === String(productId)
     )
 
-    return item?.completed === true
+    // AM and PM are completed separately: read the flag for the period shown.
+    return (timeOfDay === 'PM' ? item?.completedPM : item?.completedAM) === true
   }
 
   const isScheduled = (productId, date) => {
     const routine = routines[dateKey(date)] || []
 
     return routine.some(
-      (entry) => String(entry.productId) === String(productId)
+      (entry) =>
+        String(entry.productId) === String(productId) &&
+        (timeOfDay === 'PM' ? entry.removedPM : entry.removedAM) !== true
     )
   }
 
@@ -165,15 +172,21 @@ export default function Tracker() {
     <div className="w-full min-h-[calc(100vh-64px)] bg-[#f5f9f6]">
       <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-8">
 
-        {/* Top controls */}
-        <div className="w-full flex justify-end mb-5">
+        {/* Title + AM / PM switch */}
+        <div className="w-full flex items-center justify-between flex-wrap gap-4 mb-5">
+          <h1 className="text-xl sm:text-2xl font-bold leading-tight text-ink">
+            {firstName ? `${firstName}’s` : 'Your'}
+            <br />
+            Skin Journey
+          </h1>
+
           <button
             type="button"
             onClick={() => setTimeOfDay(timeOfDay === 'AM' ? 'PM' : 'AM')}
             aria-label={`Switch to ${timeOfDay === 'AM' ? 'PM' : 'AM'}`}
             className={`
               relative
-              w-[100px] h-[44px]
+              w-[76px] h-[32px]
               rounded-full
               overflow-hidden
               transition-colors duration-300
@@ -189,12 +202,12 @@ export default function Tracker() {
               className={`
                 absolute inset-0
                 flex items-center
-                text-[18px]
+                text-[13px]
                 font-normal
                 transition-all duration-300
                 ${timeOfDay === 'AM'
-                  ? 'justify-end pr-5 text-white'
-                  : 'justify-start pl-5 text-white'
+                  ? 'justify-end pr-3 text-white'
+                  : 'justify-start pl-3 text-white'
                 }
               `}
             >
@@ -206,18 +219,18 @@ export default function Tracker() {
               className={`
                 absolute
                 top-[2px]
-                w-[40px] h-[40px]
+                w-[28px] h-[28px]
                 rounded-full
                 bg-[#f8f7ef]
                 border border-[#e5e1d5]
                 shadow-[0_1px_4px_rgba(0,0,0,0.12)]
                 flex items-center justify-center
-                text-[21px]
+                text-[15px]
                 text-[#2b2b2b]
                 transition-all duration-300 ease-in-out
                 ${timeOfDay === 'AM'
                   ? 'left-[2px]'
-                  : 'left-[58px]'
+                  : 'left-[46px]'
                 }
               `}
             >
@@ -231,21 +244,11 @@ export default function Tracker() {
           w-full
           grid
           grid-cols-1
-          lg:grid-cols-[180px_minmax(0,1fr)]
           gap-4
           lg:gap-6
           items-end
           mb-5
         ">
-
-          {/* Journey title */}
-          <div className="hidden lg:block">
-            <h1 className="text-xl sm:text-2xl font-bold leading-tight text-[#202621]">
-              Jordan’s
-              <br />
-              Skin Journey
-            </h1>
-          </div>
 
           {/* Month + dates */}
           <div className="w-full min-w-0">
@@ -256,7 +259,7 @@ export default function Tracker() {
                 type="button"
                 onClick={goPreviousWeek}
                 aria-label="Previous week"
-                className="w-8 h-8 rounded-full bg-[#b5d2ba] text-[#31523b] grid place-items-center hover:bg-[#a4c6aa] transition"
+                className="w-8 h-8 rounded-full bg-gg-100 text-gg-800 hover:bg-gg-200 grid place-items-center transition"
               >
                 ‹
               </button>
@@ -264,7 +267,7 @@ export default function Tracker() {
               <button
                 type="button"
                 onClick={goToday}
-                className="text-xl sm:text-2xl font-semibold text-[#202621] hover:text-[#315c40] transition"
+                className="text-xl sm:text-2xl font-semibold text-ink hover:text-gg-700 transition"
               >
                 {monthTitle}
               </button>
@@ -273,7 +276,7 @@ export default function Tracker() {
                 type="button"
                 onClick={goNextWeek}
                 aria-label="Next week"
-                className="w-8 h-8 rounded-full bg-[#b5d2ba] text-[#31523b] grid place-items-center hover:bg-[#a4c6aa] transition"
+                className="w-8 h-8 rounded-full bg-gg-100 text-gg-800 hover:bg-gg-200 grid place-items-center transition"
               >
                 ›
               </button>
@@ -291,15 +294,15 @@ export default function Tracker() {
                     type="button"
                     onClick={() => setSelectedDate(key)}
                     className={`w-full min-w-0 h-16 sm:h-[72px] rounded-xl border flex flex-col items-center justify-center transition ${isSelected
-                      ? 'border-[#315c40] bg-white shadow-[0_2px_8px_rgba(30,60,40,.12)]'
-                      : 'border-[#cfd7d1] bg-[#f8faf8] hover:border-[#8ca895] hover:bg-white'
+                      ? 'bg-white border-gg-500 shadow-md ring-1 ring-gg-300'
+                      : 'bg-white border-gg-200 hover:border-gg-400 hover:shadow-sm'
                       }`}
                   >
-                    <span className="text-[10px] sm:text-xs text-[#59645d]">
+                    <span className="text-[10px] sm:text-xs font-bold text-ink">
                       {date.getDate()}
                     </span>
 
-                    <span className="text-[10px] sm:text-xs font-medium text-[#29322d]">
+                    <span className="text-[10px] sm:text-xs text-muted">
                       {DAYS[index]}
                     </span>
                   </button>
@@ -309,25 +312,16 @@ export default function Tracker() {
           </div>
         </div>
 
-        {/* Mobile title */}
-        <div className="w-full lg:hidden mb-5">
-          <h1 className="text-xl font-bold leading-tight text-[#202621]">
-            Jordan’s
-            <br />
-            Skin Journey
-          </h1>
-        </div>
-
         {/* Tracker */}
-        <div className="w-full space-y-3">
+        <div className="w-full space-y-3 bg-gg-100/70 border border-gg-200 rounded-2xl p-4 sm:p-5 shadow-card">
 
           {loading ? (
-            <div className="w-full bg-white border border-[#dfe6e1] rounded-xl p-8 text-center text-sm text-gray-500">
+            <div className="w-full bg-white border border-gg-200 rounded-xl p-8 text-center text-sm text-gray-500">
               Loading your routine...
             </div>
           ) : filteredProducts.length === 0 ? (
-            <div className="w-full bg-white border border-[#dfe6e1] rounded-xl p-8 text-center">
-              <p className="font-semibold text-[#263129]">
+            <div className="w-full bg-white border border-gg-200 rounded-xl p-8 text-center">
+              <p className="font-semibold text-ink">
                 Nothing in your {timeOfDay === 'AM' ? 'morning' : 'night'} routine on this day.
               </p>
 
@@ -339,7 +333,7 @@ export default function Tracker() {
             filteredProducts.map((product) => (
               <div
                 key={product.id}
-                className="w-full bg-white border border-[#d9e0db] rounded-xl shadow-[0_2px_5px_rgba(30,50,35,.08)] overflow-hidden"
+                className="w-full bg-white border border-gg-200 rounded-xl shadow-[0_2px_5px_rgba(30,50,35,.08)] overflow-hidden"
               >
 
                 <div className="
@@ -357,17 +351,17 @@ export default function Tracker() {
 
                   {/* Product information */}
                   <div className="min-w-0">
-                    <h2 className="text-xs sm:text-sm font-semibold text-[#202621] truncate">
+                    <h2 className="text-xs sm:text-sm font-semibold text-ink truncate">
                       {product.name}
                     </h2>
 
                     {product.actives?.length > 0 ? (
-                      <p className="text-[9px] sm:text-[10px] text-[#4e5c53] truncate mt-0.5">
+                      <p className="text-[9px] sm:text-[10px] text-gg-700 truncate mt-0.5">
                         Active: {product.actives.join(', ')}
                       </p>
                     ) : null}
 
-                    <p className="text-[9px] sm:text-[10px] text-[#667169] truncate">
+                    <p className="text-[9px] sm:text-[10px] text-muted truncate">
                       {product.category}
                     </p>
                   </div>
@@ -393,7 +387,7 @@ export default function Tracker() {
                           }
                           onClick={() => setSelectedDate(key)}
                           className={`w-full min-w-0 flex items-center justify-center rounded-full p-1 transition ${selected
-                            ? 'ring-2 ring-[#b6c8ba] ring-offset-1'
+                            ? 'ring-2 ring-gg-300 ring-offset-1'
                             : ''
                             }`}
                         >
