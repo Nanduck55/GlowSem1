@@ -1,7 +1,12 @@
 # GlowGuard — Skincare Routine & Chemical Safety (React + Tailwind)
 
-Frontend-only implementation of the GlowGuard web application, ready to plug into a
-PHP + MySQL backend by flipping a single environment flag.
+[![PHP](https://img.shields.io/badge/PHP-7.4%20%7C%208.x-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
+[![MariaDB](https://img.shields.io/badge/MariaDB-10.4+-003545?style=for-the-badge&logo=mariadb&logoColor=white)](https://mariadb.org/)
+[![React](https://img.shields.io/badge/React-18.x-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+[![Security Pass](https://img.shields.io/badge/Security_Audit-PASSED-brightgreen?style=for-the-badge&logo=shieldsdotio)](./TEST_PROTOCOL.md)
+[![Build Status](https://img.shields.io/badge/Master_Build-STABLE-blue?style=for-the-badge)](./TEST_PROTOCOL.md)
+
+An end-to-end web platform engineered to analyze skincare routines, cross-reference active chemical ingredients, and prevent adverse skin reactions using automated conflict detection.
 
 ## Features implemented
 - **AM/PM Routine Builder** — weekly date picker, per-date routines, reorderable list
@@ -17,55 +22,55 @@ PHP + MySQL backend by flipping a single environment flag.
 - **Responsive UI** — mobile nav, adaptive grids, Tailwind design system matching the
   green GlowGuard theme.
 
-## Getting started (no backend needed)
-```bash
-npm install
-npm run dev        # http://localhost:5173
-```
-The app runs out of the box against a localStorage "mock database" seeded with the
-demo shelf from the screenshots (Celeteque, Rhode, Hello Glow, etc.).
+---
 
-## Connecting the PHP + MySQL backend later
-1. Copy `.env.example` → `.env`:
-   ```
-   VITE_API_URL=http://localhost/glowguard-backend/api
-   VITE_USE_MOCK=false
-   ```
-2. Point `VITE_API_URL` at your PHP folder (or use the Vite proxy already stubbed in
-   `vite.config.js`).
-3. Implement the endpoints listed at the top of **`src/api/client.js`** — the exact
-   request/response contract for every PHP script is documented there. Every service
-   function in `src/api/services.js` already calls the matching endpoint when
-   `VITE_USE_MOCK=false` and sends `Authorization: Bearer <token>` once your PHP
-   auth issues one.
+## 🛠 System Architecture & Stack
 
-## Suggested MySQL tables
-```sql
-users        (id, name, email, password_hash, skin_type, created_at)
-products     (id, user_id, name, category, time_of_day, created_at)
-product_actives (product_id, ingredient_id)
-ingredients  (id, name)
-clash_rules  (id, active_a, active_b, message)
-routines     (id, user_id, routine_date, product_id, completed, position)
-tracker      (id, user_id, track_date, completed_count, total)
-```
+* **Frontend:** React.js (SPA, JSX component routing, state management)
+* **Backend API:** PHP (PDO Prepared Statements, CORS Preflight Handlers, JSON REST Protocol)
+* **Database:** MariaDB / MySQL (10-table normalized relational schema)
+* **API Testing Suite:** Thunder Client / cURL Matrix
 
-## Project structure
-```
-src/
-  api/
-    client.js       Axios instance + endpoint contract (PHP-ready)
-    services.js     All data access — mock or real, switched by VITE_USE_MOCK
-    seed.js         Demo data: products, ingredients, clash rules
-  context/
-    AppContext.jsx  Global state (user, products, rules, toast)
-  components/
-    Navbar.jsx  Modal.jsx  ProductForm.jsx
-  pages/
-    Landing.jsx  Auth.jsx  Routine.jsx  Shelf.jsx
-    Tracker.jsx  Account.jsx  Admin.jsx
-```
+---
 
-## Auth page
+## 🗄 Database Schema Overview
 
-The `/auth` route now contains the React + Tailwind port of `log3.html`, including the desktop Sign In/Sign Up sliding panel, mobile switch, password visibility toggles, Remember Me, Forgot Password toast, Google placeholder action, and compatibility with the existing localStorage/mock authentication flow.
+The engine operates on a normalized 10-table architecture in `glowguard_db`:
+
+1. `active_ingredients` — Master registry of chemical active ingredients
+2. `ingredient_clash_rules` — Core chemical conflict matrix and severity mapping
+3. `products` — Skincare product catalog items
+4. `product_ingredients` — Many-to-many junction mapping products to ingredients
+5. `routines` — User-created skincare routine routines
+6. `routine_products` — Junction mapping routines to catalog products
+7. `routine_logs` — Activity tracking and compatibility execution logs
+8. `users` — User authentication profiles
+9. `auth_tokens` — Active API session management
+10. `password_resets` — Secure recovery verification workflow
+
+---
+
+## 🧪 Quality Assurance & Test Verification
+
+The backend has been verified against 7 core API protocol layers:
+
+| Test ID | Category | Target Layer | Expected Result |
+| :--- | :--- | :--- | :--- |
+| **TEST-01** | Web Pipeline & JSON Contract | HTTP / Application | `200 OK` (Strict JSON) |
+| **TEST-02** | Preflight CORS Handshake | Protocol | `204 No Content` / `200 OK` |
+| **TEST-03** | SQL Injection Defense | Data / Security | `401 Unauthorized` / Blocked |
+| **TEST-04** | HTTP Verb Enforcement | Routing | `405 Method Not Allowed` |
+| **TEST-05** | Payload Validation | Processing | `400 Bad Request` |
+| **TEST-06** | XSS & Input Sanitization | Input Safety / DOM | Safe Escaped String |
+| **TEST-07** | Route Protection | Auth Guard | `401 Unauthorized` |
+
+*For complete step-by-step reproduction instructions, refer to [`TEST_PROTOCOL.md`](./TEST_PROTOCOL.md).*
+
+---
+
+## 🚀 Setup & Installation
+
+1. Clone repository to your local web server directory (`xampp/htdocs/`):
+   ```bash
+   git clone [https://github.com/Nanduck55/GlowSem1.git](https://github.com/Nanduck55/GlowSem1.git)
+
