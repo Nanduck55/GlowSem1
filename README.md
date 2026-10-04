@@ -3,7 +3,7 @@
 [![PHP](https://img.shields.io/badge/PHP-7.4%20%7C%208.x-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
 [![MariaDB](https://img.shields.io/badge/MariaDB-10.4+-003545?style=for-the-badge&logo=mariadb&logoColor=white)](https://mariadb.org/)
 [![React](https://img.shields.io/badge/React-18.x-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
-[![Security Pass](https://img.shields.io/badge/Security_Audit-PASSED-brightgreen?style=for-the-badge&logo=shieldsdotio)](./TEST_PROTOCOL.md)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.x-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
 [![Build Status](https://img.shields.io/badge/Master_Build-NIGHTLY-blue?style=for-the-badge)](./TEST_PROTOCOL.md)
 
 An end-to-end web platform engineered to analyze skincare routines, cross-reference active chemical ingredients, and prevent adverse skin reactions using automated conflict detection.
