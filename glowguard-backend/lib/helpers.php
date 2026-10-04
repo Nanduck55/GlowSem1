@@ -181,24 +181,31 @@ function set_period_completion(PDO $pdo, int $userId, string $date, int $product
 
 function load_products(PDO $pdo, int $userId, ?int $productId = null): array
 {
-    $sql = 'SELECT product_id, product_name, category FROM products WHERE user_id = :uid';
+    // 1. Fetch products mapped via user_products junction table
+    $sql = 'SELECT p.product_id, p.product_name, p.category 
+            FROM user_products up
+            JOIN products p ON p.product_id = up.product_id 
+            WHERE up.user_id = :uid';
+    
     $params = ['uid' => $userId];
     if ($productId !== null) {
-        $sql .= ' AND product_id = :pid';
+        $sql .= ' AND p.product_id = :pid';
         $params['pid'] = $productId;
     }
-    $stmt = $pdo->prepare($sql . ' ORDER BY product_id ASC');
+    
+    $stmt = $pdo->prepare($sql . ' ORDER BY up.added_at DESC');
     $stmt->execute($params);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
     if (!$rows) return [];
 
+    // 2. Load active ingredients via user_products link
     $actives = [];
     $stmt = $pdo->prepare(
         'SELECT pi.product_id, ai.ingredient_name
          FROM product_ingredients pi
          JOIN active_ingredients ai ON ai.ingredient_id = pi.ingredient_id
-         JOIN products p ON p.product_id = pi.product_id
-         WHERE p.user_id = :uid
+         JOIN user_products up ON up.product_id = pi.product_id
+         WHERE up.user_id = :uid
          ORDER BY ai.ingredient_name ASC'
     );
     $stmt->execute(['uid' => $userId]);
@@ -206,6 +213,7 @@ function load_products(PDO $pdo, int $userId, ?int $productId = null): array
         $actives[(int) $r['product_id']][] = $r['ingredient_name'];
     }
 
+    // 3. Load product usage count
     $uses = [];
     $stmt = $pdo->prepare(
         'SELECT rp.product_id, COUNT(*) AS n
@@ -220,6 +228,7 @@ function load_products(PDO $pdo, int $userId, ?int $productId = null): array
         $uses[(int) $r['product_id']] = (int) $r['n'];
     }
 
+    // 4. Load time of day preferences (AM/PM)
     $times = [];
     $stmt = $pdo->prepare(
         'SELECT rp.product_id, r.routine_name
@@ -232,6 +241,7 @@ function load_products(PDO $pdo, int $userId, ?int $productId = null): array
         $times[(int) $r['product_id']][$r['routine_name']] = true;
     }
 
+    // 5. Structure payload for React UI
     $out = [];
     foreach ($rows as $row) {
         $id = (int) $row['product_id'];

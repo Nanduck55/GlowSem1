@@ -1,136 +1,130 @@
 <?php
 /**
- * GlowCouncil curation store (product recommendations) — MySQL, NO schema change.
- *
- * glowguard_db has no table with columns for a recommendation's skin type,
- * description and visibility, and the schema must stay exactly as it is. So a
- * recommendation is stored as ONE row of the existing `ingredient_clash_rules`
- * table, using columns that already exist:
- *
- *   severity_level    = 'GlowCouncil'   marks the row as a recommendation
- *   source_reference  = skin type       (Oily, Dry, Combination, ...)
- *   warning_text      = JSON            {name, category, starIngredient,
- *                                        description, visible}
- *   ingredient_id_1/2 = NULL            (both columns are nullable)
- *   rule_id           = the recommendation id (auto increment)
- *   last_updated      = updatedAt       (MySQL keeps it current)
- *
- * Real clash rules always have BOTH ingredient ids set and read the table with
- * INNER JOINs, so recommendation rows never show up as safety rules, and the
- * clash-rules API never touches them (see the IS NOT NULL checks there).
- *
- * Only data is added — no table, column or index is created or changed.
+ * GlowCouncil curation store (product recommendations) — Clean relational table.
+ * Interacts directly with the `product_recommendations` and `products` tables.
  */
 
-// Same list as CATEGORIES in the frontend (src/api/constants.js).
 const REC_CATEGORIES = ['Cleanser', 'Toner', 'Serum', 'Moisturizer', 'Sunscreen', 'Exfoliant', 'Mask', 'Other'];
 const REC_SKIN_TYPES = ['Oily', 'Dry', 'Combination', 'Balanced', 'Sensitive'];
 
-// Value stored in ingredient_clash_rules.severity_level (VARCHAR(45)).
-const REC_MARKER = 'GlowCouncil';
-
-// Selects only recommendation rows.
-const REC_WHERE = 'ingredient_id_1 IS NULL AND ingredient_id_2 IS NULL AND severity_level = :marker';
-
-/** One database row -> the frontend shape. Returns null if the JSON is unreadable. */
-function recs_row_to_public(array $row): ?array
+/**
+ * Maps a relational database row to the exact public array structure expected by React.
+ */
+function recs_row_to_public(array $row): array
 {
-    $payload = json_decode((string) $row['warning_text'], true);
-    if (!is_array($payload)) return null;
-
     return [
-        'id'             => (int) $row['rule_id'],
-        'name'           => (string) ($payload['name'] ?? ''),
-        'category'       => (string) ($payload['category'] ?? ''),
-        'skinType'       => (string) ($row['source_reference'] ?? ''),
-        'starIngredient' => (string) ($payload['starIngredient'] ?? ''),
-        'description'    => (string) ($payload['description'] ?? ''),
-        'visible'        => (bool) ($payload['visible'] ?? true),
-        'updatedAt'      => $row['last_updated'] ?? null,
+        'id'             => (int) $row['recommendation_id'],
+        'name'           => (string) $row['product_name'],
+        'category'       => (string) $row['category'],
+        'skinType'       => (string) $row['skin_type'],
+        'starIngredient' => (string) ($row['star_ingredient'] ?? ''),
+        'description'    => (string) $row['recommendation_note'],
+        'visible'        => (bool) $row['is_visible'],
+        'updatedAt'      => $row['updated_at'] ?? null,
     ];
-}
-
-/** The JSON kept in warning_text. */
-function recs_payload(array $fields): string
-{
-    return json_encode([
-        'name'           => $fields['name'],
-        'category'       => $fields['category'],
-        'starIngredient' => $fields['starIngredient'],
-        'description'    => $fields['description'],
-        'visible'        => (bool) $fields['visible'],
-    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 }
 
 /** Every recommendation, oldest first. */
 function recs_all(PDO $pdo): array
 {
-    $stmt = $pdo->prepare(
-        'SELECT rule_id, warning_text, source_reference, last_updated
-         FROM ingredient_clash_rules
-         WHERE ' . REC_WHERE . '
-         ORDER BY rule_id'
-    );
-    $stmt->execute(['marker' => REC_MARKER]);
+    $stmt = $pdo->prepare('         SELECT              pr.recommendation_id,             p.product_name,             p.category,             pr.skin_type,             pr.star_ingredient,             pr.recommendation_note,             pr.is_visible,             pr.created_at AS updated_at         FROM product_recommendations pr         JOIN products p ON pr.product_id = p.product_id         ORDER BY pr.recommendation_id ASC     ');$stmt->execute();
 
     $out = [];
-    foreach ($stmt->fetchAll() as $row) {
-        $rec = recs_row_to_public($row);
-        if ($rec !== null) $out[] = $rec;
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as$row) {
+        $out[] = recs_row_to_public($row);
     }
     return $out;
 }
 
 /** One recommendation by id, or null. */
-function recs_find(PDO $pdo, int $id): ?array
+function recs_find(PDO $pdo, int$id): ?array
 {
-    $stmt = $pdo->prepare(
-        'SELECT rule_id, warning_text, source_reference, last_updated
-         FROM ingredient_clash_rules
-         WHERE rule_id = :id AND ' . REC_WHERE
-    );
-    $stmt->execute(['id' => $id, 'marker' => REC_MARKER]);
-    $row = $stmt->fetch();
+    $stmt =$pdo->prepare('
+        SELECT 
+            pr.recommendation_id,
+            p.product_name,
+            p.category,
+            pr.skin_type,
+            pr.star_ingredient,
+            pr.recommendation_note,
+            pr.is_visible,
+            pr.created_at AS updated_at
+        FROM product_recommendations pr
+        JOIN products p ON pr.product_id = p.product_id
+        WHERE pr.recommendation_id = :id
+    ');
+    $stmt->execute(['id' =>$id]);
+    $row =$stmt->fetch(PDO::FETCH_ASSOC);
+
     return $row ? recs_row_to_public($row) : null;
 }
 
 /** Inserts a recommendation and returns its new id. */
-function recs_insert(PDO $pdo, array $fields): int
+function recs_insert(PDO $pdo, array$fields): int
 {
-    $pdo->prepare(
-        'INSERT INTO ingredient_clash_rules
-             (ingredient_id_1, ingredient_id_2, warning_text, severity_level, source_reference)
-         VALUES (NULL, NULL, :payload, :marker, :skin)'
-    )->execute([
-        'payload' => recs_payload($fields),
-        'marker'  => REC_MARKER,
-        'skin'    => $fields['skinType'],
-    ]);
+    $pdo->beginTransaction();
+    try {
+        // 1. Create entry in master catalog
+        $pStmt = $pdo->prepare('             INSERT INTO products (product_name, category)              VALUES (:name, :category)         ');$pStmt->execute([
+            'name'     => $fields['name'],
+            'category' => $fields['category']
+        ]);
+        $productId = (int)$pdo->lastInsertId();
 
-    return (int) $pdo->lastInsertId();
+        // 2. Link recommendation note in product_recommendations
+        $rStmt = $pdo->prepare('             INSERT INTO product_recommendations                  (product_id, skin_type, star_ingredient, recommendation_note, is_visible)             VALUES (:pid, :skin, :star, :note, :vis)         ');$rStmt->execute([
+            'pid'   => $productId,
+            'skin'  => $fields['skinType'],
+            'star'  => $fields['starIngredient'],
+            'note'  => $fields['description'],
+            'vis'   => $fields['visible'] ? 1 : 0
+        ]);
+        $recId = (int)$pdo->lastInsertId();
+
+        $pdo->commit();
+        return $recId;
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction())$pdo->rollBack();
+        throw $e;
+    }
 }
 
 /** Overwrites a recommendation's fields. */
-function recs_update(PDO $pdo, int $id, array $fields): void
+function recs_update(PDO $pdo, int $id, array$fields): void
 {
-    $pdo->prepare(
-        'UPDATE ingredient_clash_rules
-         SET warning_text = :payload, source_reference = :skin
-         WHERE rule_id = :id AND ' . REC_WHERE
-    )->execute([
-        'payload' => recs_payload($fields),
-        'skin'    => $fields['skinType'],
-        'id'      => $id,
-        'marker'  => REC_MARKER,
-    ]);
+    $rec = recs_find($pdo,$id);
+    if (!$rec) return;
+
+    $pdo->beginTransaction();
+    try {
+        // Find product ID associated with this recommendation
+        $stmt =$pdo->prepare('SELECT product_id FROM product_recommendations WHERE recommendation_id = :id');
+        $stmt->execute(['id' =>$id]);
+        $productId = (int)$stmt->fetchColumn();
+
+        // Update product name/category in products catalog
+        $pStmt =$pdo->prepare('UPDATE products SET product_name = :name, category = :cat WHERE product_id = :pid');
+        $pStmt->execute(['name' =>$fields['name'], 'cat' => $fields['category'], 'pid' =>$productId]);
+
+        // Update recommendation notes
+        $rStmt = $pdo->prepare('             UPDATE product_recommendations             SET skin_type = :skin, star_ingredient = :star, recommendation_note = :note, is_visible = :vis             WHERE recommendation_id = :id         ');$rStmt->execute([
+            'skin' => $fields['skinType'],
+            'star' => $fields['starIngredient'],
+            'note' => $fields['description'],
+            'vis'  => $fields['visible'] ? 1 : 0,             'id'   =>$id
+        ]);
+
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction())$pdo->rollBack();
+        throw $e;
+    }
 }
 
 /** Deletes a recommendation. Returns true if a row was removed. */
-function recs_delete(PDO $pdo, int $id): bool
+function recs_delete(PDO $pdo, int$id): bool
 {
-    $stmt = $pdo->prepare(
-        'DELETE FROM ingredient_clash_rules WHERE rule_id = :id AND ' . REC_WHERE
-    );
-    $stmt->execute(['id' => $id, 'marker' => REC_MARKER]);
+    $stmt =$pdo->prepare('DELETE FROM product_recommendations WHERE recommendation_id = :id');
+    $stmt->execute(['id' =>$id]);
     return $stmt->rowCount() > 0;
 }

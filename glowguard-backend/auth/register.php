@@ -8,6 +8,7 @@ $data = body();
 $name = trim($data['name'] ?? '');
 $email = strtolower(trim($data['email'] ?? ''));
 $password = (string) ($data['password'] ?? '');
+$skinType = trim($data['skin_type'] ?? '') ?: null; // 1. Read skin_type
 
 if ($name === '' || $email === '' || $password === '') {
     json_error('Name, email, and password are required.', 400);
@@ -30,11 +31,18 @@ $hash = password_hash($password, PASSWORD_BCRYPT);
 try {
     $pdo->beginTransaction();
 
+    // 2. Insert user with skin_type
     $insert = $pdo->prepare(
-        "INSERT INTO users (full_name, email, password_hash, role, status)
-         VALUES (:name, :email, :hash, 'user', 'active')"
+        "INSERT INTO users (full_name, email, password_hash, role, status, skin_type)
+         VALUES (:name, :email, :hash, 'user', 'active', :skin_type)"
     );
-    $insert->execute(['name' => $name, 'email' => $email, 'hash' => $hash]);
+    $insert->execute([
+        'name' => $name,
+        'email' => $email,
+        'hash' => $hash,
+        'skin_type' => $skinType
+    ]);
+    
     $userId = (int) $pdo->lastInsertId();
 
     $stmt = $pdo->prepare('SELECT user_id, full_name, email, role, status, skin_type, routine_goal, date_joined FROM users WHERE user_id = :id');

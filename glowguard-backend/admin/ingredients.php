@@ -1,14 +1,17 @@
 <?php
+/**
+ * Active Ingredients Dictionary Management.
+ */
 require_once __DIR__ . '/../config/bootstrap.php';
 
 $pdo = get_db();
-$user = require_auth($pdo); // any logged-in user may READ the shared list
-if ($_SERVER['REQUEST_METHOD'] !== 'GET') assert_admin($user); // only admins may change it
+$user = require_auth($pdo);
+if ($_SERVER['REQUEST_METHOD'] !== 'GET') assert_admin($user);
 
 function ingredient_names(PDO $pdo): array
 {
-    $rows = $pdo->query('SELECT ingredient_name FROM active_ingredients ORDER BY ingredient_name')->fetchAll();
-    return array_column($rows, 'ingredient_name');
+    $stmt = $pdo->query('SELECT ingredient_name FROM active_ingredients ORDER BY ingredient_name ASC');
+    return $stmt->fetchAll(PDO::FETCH_COLUMN);
 }
 
 switch ($_SERVER['REQUEST_METHOD']) {
@@ -17,34 +20,31 @@ switch ($_SERVER['REQUEST_METHOD']) {
         json_out(ingredient_names($pdo));
         break;
 
-    case 'POST': {
+    case 'POST':
         $data = body();
         $name = trim($data['name'] ?? '');
-        if ($name === '') json_error('Ingredient name is required.');
+        if ($name === '') json_error('Ingredient name is required.', 400);
 
-        // active_ingredients has no UNIQUE key on the name, so check first.
-        $exists = $pdo->prepare('SELECT ingredient_id FROM active_ingredients WHERE ingredient_name = :name LIMIT 1');
-        $exists->execute(['name' => $name]);
-        if (!$exists->fetch()) {
-            $pdo->prepare('INSERT INTO active_ingredients (ingredient_name) VALUES (:name)')
-                ->execute(['name' => $name]);
+        $stmt = $pdo->prepare('SELECT ingredient_id FROM active_ingredients WHERE LOWER(ingredient_name) = LOWER(:name) LIMIT 1');
+        $stmt->execute(['name' => $name]);
+        
+        if (!$stmt->fetch()) {
+            $insert = $pdo->prepare('INSERT INTO active_ingredients (ingredient_name) VALUES (:name)');
+            $insert->execute(['name' => $name]);
         }
 
         json_out(ingredient_names($pdo), 201);
         break;
-    }
 
-    case 'DELETE': {
-        $name = $_GET['name'] ?? '';
-        if ($name === '') json_error('Ingredient name is required.');
+    case 'DELETE':
+        $name = trim($_GET['name'] ?? '');
+        if ($name === '') json_error('Ingredient name is required.', 400);
 
-        // Linked product_ingredients and clash rules are removed automatically
-        // (ON DELETE CASCADE).
-        $pdo->prepare('DELETE FROM active_ingredients WHERE ingredient_name = :name')
-            ->execute(['name' => $name]);
+        $stmt = $pdo->prepare('DELETE FROM active_ingredients WHERE LOWER(ingredient_name) = LOWER(:name)');
+        $stmt->execute(['name' => $name]);
+        
         json_out(['ok' => true]);
         break;
-    }
 
     default:
         json_error('Method not allowed.', 405);

@@ -9,6 +9,7 @@ $userId = $user['id'];
 switch ($_SERVER['REQUEST_METHOD']) {
 
     case 'GET':
+        // Load products mapped through user_products junction table
         json_out(load_products($pdo, $userId));
         break;
 
@@ -25,22 +26,30 @@ switch ($_SERVER['REQUEST_METHOD']) {
 
         $pdo->beginTransaction();
         try {
+            // 1. Insert product into master catalog
             $stmt = $pdo->prepare(
-                'INSERT INTO products (user_id, product_name, category, is_custom)
-                 VALUES (:uid, :name, :category, 1)'
+                'INSERT INTO products (product_name, category, is_custom)
+                 VALUES (:name, :category, 1)'
             );
-            $stmt->execute(['uid' => $userId, 'name' => $name, 'category' => $category]);
-            $id = (int) $pdo->lastInsertId();
+            $stmt->execute(['name' => $name, 'category' => $category]);
+            $productId = (int) $pdo->lastInsertId();
 
-            set_product_actives($pdo, $id, $actives);
-            set_product_time_of_day($pdo, $userId, $id, $timeOfDay);
+            // 2. Link product to user's shelf in user_products
+            $userProdStmt = $pdo->prepare(
+                'INSERT INTO user_products (user_id, product_id)
+                 VALUES (:uid, :pid)'
+            );
+            $userProdStmt->execute(['uid' => $userId, 'pid' => $productId]);
+
+            set_product_actives($pdo, $productId, $actives);
+            set_product_time_of_day($pdo, $userId, $productId, $timeOfDay);
             $pdo->commit();
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) $pdo->rollBack();
             throw $e;
         }
 
-        json_out(load_products($pdo, $userId, $id)[0], 201);
+        json_out(load_products($pdo, $userId, $productId)[0], 201);
         break;
     }
 
@@ -49,7 +58,8 @@ switch ($_SERVER['REQUEST_METHOD']) {
         $id = (int) ($data['id'] ?? 0);
         if (!$id) json_error('Product id is required.');
 
-        $own = $pdo->prepare('SELECT product_id FROM products WHERE product_id = :id AND user_id = :uid');
+        // Verify user owns this item via user_products
+        $own = $pdo->prepare('SELECT product_id FROM user_products WHERE product_id = :id AND user_id = :uid');
         $own->execute(['id' => $id, 'uid' => $userId]);
         if (!$own->fetch()) json_error('Product not found.', 404);
 
@@ -65,10 +75,9 @@ switch ($_SERVER['REQUEST_METHOD']) {
         $pdo->beginTransaction();
         try {
             $stmt = $pdo->prepare(
-                'UPDATE products SET product_name = :name, category = :category
-                 WHERE product_id = :id AND user_id = :uid'
+                'UPDATE products SET product_name = :name, category = :category WHERE product_id = :id'
             );
-            $stmt->execute(['name' => $name, 'category' => $category, 'id' => $id, 'uid' => $userId]);
+            $stmt->execute(['name' => $name, 'category' => $category, 'id' => $id]);
 
             set_product_actives($pdo, $id, $actives);
             set_product_time_of_day($pdo, $userId, $id, $timeOfDay);
@@ -86,10 +95,11 @@ switch ($_SERVER['REQUEST_METHOD']) {
         $id = (int) ($_GET['id'] ?? 0);
         if (!$id) json_error('Product id is required.');
 
-        $stmt = $pdo->prepare('DELETE FROM products WHERE product_id = :id AND user_id = :uid');
+        // Deleting from user_products removes it from user's shelf.
+        // ON DELETE CASCADE takes care of cascading rows automatically.
+        $stmt = $pdo->prepare('DELETE FROM user_products WHERE product_id = :id AND user_id = :uid');
         $stmt->execute(['id' => $id, 'uid' => $userId]);
-        // product_ingredients / routine_products / routine_logs rows for this
-        // product are removed automatically (ON DELETE CASCADE).
+
         json_out(['ok' => true]);
         break;
     }

@@ -242,7 +242,7 @@ function FeatureCard({ feature, index, openFeature, onToggle }) {
       type="button"
       onClick={() => onToggle(open ? null : index)}
       aria-expanded={open}
-      className="text-left bg-white border border-gg-100 rounded-2xl p-6 min-h-[250px] shadow-card hover:-translate-y-1.5 hover:shadow-pop transition flex flex-col focus:outline-none focus-visible:ring-2 focus-visible:ring-gg-500 focus-visible:ring-offset-2"
+      className="text-left bg-black border border-gg-100 rounded-2xl p-6 min-h-[250px] shadow-card hover:-translate-y-1.5 hover:shadow-pop transition flex flex-col focus:outline-none focus-visible:ring-2 focus-visible:ring-gg-500 focus-visible:ring-offset-2"
     >
       <div className="w-12 h-12 grid place-items-center rounded-xl bg-gg-100 text-gg-700 mb-5">
         {feature.icon}
@@ -357,16 +357,19 @@ function SkinQuiz() {
     // is still shown below from React state — it just isn't saved
     // anywhere until the person creates an account.
     if (user) {
-      try {
-        const updated = await updateProfile({
-          skinType: quizResult.type,
-          skinGoal: quizResult.goal,
-        })
-        setUser(updated)
-      } catch (error) {
-        console.warn('Unable to save skin type to account.', error)
-      }
+    try {
+      const updated = await updateProfile({
+        skinType: quizResult.type,
+        skinGoal: quizResult.goal,
+      })
+      setUser(updated)
+    } catch (error) {
+      console.warn('Unable to save skin type to account.', error)
     }
+  } else {
+    // Paste this line:
+    localStorage.setItem('pending_skin_type', quizResult.type)
+  }
 
     setStep(5)
     showVisual(resultImages[quizResult.type])

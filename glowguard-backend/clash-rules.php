@@ -1,26 +1,13 @@
 <?php
-/**
- * Safety Clash Rules.
- * Lives at the API root (not under /admin) because every signed-in role
- * needs GET access: the frontend's safety engine reads these rules to
- * warn any user about clashing actives in their own routine. Only Beauty
- * Consultant accounts (role = 'consultant') may create, edit, or delete
- * rules — Admins no longer manage this list.
- *
- * Each rule also carries a severity level and a source reference. Both are
- * stored in columns that already exist on ingredient_clash_rules
- * (severity_level, source_reference) — no schema change.
- */
 require_once __DIR__ . '/config/bootstrap.php';
 require_once __DIR__ . '/lib/helpers.php';
 
 $pdo = get_db();
-$user = require_auth($pdo); // any logged-in user may READ the rules (the safety engine needs them)
-if ($_SERVER['REQUEST_METHOD'] !== 'GET') assert_consultant($user); // only Beauty Consultants may change them
+$user = require_auth($pdo);
+if ($_SERVER['REQUEST_METHOD'] !== 'GET') assert_consultant($user);
 
 const SEVERITY_LEVELS  = ['Potential Conflict', 'Caution', 'Info'];
 const DEFAULT_SEVERITY = 'Potential Conflict';
-// ingredient_clash_rules.source_reference is VARCHAR(45).
 const SOURCE_MAX_LENGTH = 45;
 
 const RULE_SELECT =
@@ -30,7 +17,6 @@ const RULE_SELECT =
      JOIN active_ingredients a ON a.ingredient_id = r.ingredient_id_1
      JOIN active_ingredients b ON b.ingredient_id = r.ingredient_id_2';
 
-/** Maps any stored value (including NULL on older rules) onto one of SEVERITY_LEVELS. */
 function normalize_severity(?string $value): string
 {
     foreach (SEVERITY_LEVELS as $level) {
@@ -58,11 +44,6 @@ function fetch_rule(PDO $pdo, int $id): array
     return row_to_rule($stmt->fetch());
 }
 
-/**
- * Validates the request body and resolves both ingredient names to ids.
- * `severity` and `source` are optional: when a client leaves them out,
- * they come back as null so an edit doesn't wipe the stored values.
- */
 function rule_input(PDO $pdo, array $data): array
 {
     $a = trim($data['a'] ?? '');
@@ -134,9 +115,7 @@ switch ($_SERVER['REQUEST_METHOD']) {
 
         [$idA, $idB, $message, $severity, $source] = rule_input($pdo, $data);
 
-        // ingredient_id_1 IS NOT NULL: rows without ingredients are GlowCouncil
-        // recommendations (see lib/recommendations_store.php), not clash rules.
-        $exists = $pdo->prepare('SELECT rule_id FROM ingredient_clash_rules WHERE rule_id = :id AND ingredient_id_1 IS NOT NULL');
+        $exists = $pdo->prepare('SELECT rule_id FROM ingredient_clash_rules WHERE rule_id = :id');
         $exists->execute(['id' => $id]);
         if (!$exists->fetch()) json_error('Clash rule not found.', 404);
 
@@ -164,7 +143,7 @@ switch ($_SERVER['REQUEST_METHOD']) {
         $id = (int) ($_GET['id'] ?? 0);
         if (!$id) json_error('Clash rule id is required.');
 
-        $pdo->prepare('DELETE FROM ingredient_clash_rules WHERE rule_id = :id AND ingredient_id_1 IS NOT NULL')->execute(['id' => $id]);
+        $pdo->prepare('DELETE FROM ingredient_clash_rules WHERE rule_id = :id')->execute(['id' => $id]);
         json_out(['ok' => true]);
         break;
     }

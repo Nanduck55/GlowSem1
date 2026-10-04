@@ -441,12 +441,14 @@ export default function Auth() {
         name,
         email,
         password,
+        skin_type: localStorage.getItem('pending_skin_type') || null, // Add this line
       })
 
       // Remembers that this email just registered, so their very next
       // login (the first one, since register doesn't auto sign in) is
       // routed to the /welcome onboarding page instead of straight to
       // /routine. Cleared as soon as that first login happens below.
+      localStorage.removeItem('pending_skin_type') //ADD THIS
       localStorage.setItem(`gg_new_signup:${email.toLowerCase()}`, '1')
 
       showToast(

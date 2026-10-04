@@ -1,18 +1,14 @@
 <?php
 /**
- * Included at the top of every endpoint.
- * Sets up CORS (so the Vite dev server on a different port can call this
- * API), forces JSON, and handles the CORS preflight (OPTIONS) request.
+ * Core initialization file included at the top of every API endpoint.
+ * Configures CORS, default response content-types, and error handling.
  */
 
-// Allow the Vite dev server (default port 5173) and same-origin requests.
-// If you deploy the built frontend to the same XAMPP vhost as this API,
-// you can tighten this to that single origin instead of '*'.
 $allowedOrigin = getenv('CORS_ORIGIN') ?: '*';
 
 header("Access-Control-Allow-Origin: $allowedOrigin");
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
 header('Content-Type: application/json; charset=utf-8');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -20,11 +16,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-// Any uncaught error (e.g. a SQL error) becomes a JSON 500 instead of an HTML
-// page, so the frontend can show a readable message and CORS headers still apply.
 set_exception_handler(function (Throwable $e) {
     http_response_code(500);
-    echo json_encode(['error' => 'Server error.', 'detail' => $e->getMessage()]);
+    $response = ['error' => 'An internal server error occurred.'];
+    if (getenv('APP_ENV') === 'development') {
+        $response['detail'] = $e->getMessage();
+    }
+    echo json_encode($response);
     exit;
 });
 
@@ -32,7 +30,9 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/../lib/response.php';
 require_once __DIR__ . '/../lib/auth.php';
 
-/** Decode the JSON request body into an associative array. */
+/**
+ * Safely decodes JSON payloads from the HTTP request body.
+ */
 function body(): array
 {
     $raw = file_get_contents('php://input');

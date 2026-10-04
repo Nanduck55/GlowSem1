@@ -1,21 +1,4 @@
 <?php
-/**
- * Creates (or promotes) the GlowGuard admin account.
- * Run it ONCE from a terminal — it refuses to run from a browser.
- *
- *   Windows (XAMPP):
- *     C:\xampp\php\php.exe create-admin.php admin@glowguard.com "Admin" "YourPassword"
- *   Mac (XAMPP):
- *     /Applications/XAMPP/xamppfiles/bin/php create-admin.php admin@glowguard.com "Admin" "YourPassword"
- *
- * Arguments (all optional; you'll be prompted for the password if omitted):
- *   1. email     default: admin@glowguard.com
- *   2. name      default: Admin
- *   3. password  min 6 characters
- *
- * If a user with that email already exists, it is promoted to an active
- * admin (and its password is reset if you passed one).
- */
 if (PHP_SAPI !== 'cli') {
     http_response_code(404);
     exit;
@@ -41,18 +24,18 @@ if (strlen($password) < 6) {
 }
 
 $pdo = get_db();
-$hash = password_hash($password, PASSWORD_DEFAULT);
+$hash = password_hash($password, PASSWORD_BCRYPT);
 
 try {
-    $find = $pdo->prepare('SELECT user_id FROM users WHERE email = :email');
+    $find = $pdo->prepare('SELECT user_id FROM users WHERE LOWER(email) = LOWER(:email)');
     $find->execute(['email' => $email]);
-    $existing = $find->fetch();
+    $existing = $find->fetch(PDO::FETCH_ASSOC);
 
     if ($existing) {
         $pdo->prepare(
             "UPDATE users SET role = 'admin', status = 'active', password_hash = :hash WHERE user_id = :id"
         )->execute(['hash' => $hash, 'id' => $existing['user_id']]);
-        echo "Existing account $email is now an admin (password updated).\n";
+        echo "Existing account $email is now an admin.\n";
     } else {
         $pdo->prepare(
             "INSERT INTO users (full_name, email, password_hash, role, status) VALUES (:name, :email, :hash, 'admin', 'active')"

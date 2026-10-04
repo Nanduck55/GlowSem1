@@ -11,11 +11,12 @@ export async function loginUser({ email, password }, remember = true) {
   return data.user
 }
 
-export async function registerUser({ name, email, password }) {
+export async function registerUser({ name, email, password, skin_type }) {
   const { data } = await api.post('/auth/register.php', {
     name,
     email,
     password,
+    skin_type, //ADD THIS LINE
   })
 
   // Registration does NOT create a browser session.
