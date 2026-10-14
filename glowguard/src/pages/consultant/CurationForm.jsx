@@ -82,7 +82,7 @@ export default function CurationForm({ mode }) {
             <p className="text-base sm:text-lg font-medium mb-1">Product Type</p>
             <select className={`${inputCls} sm:!w-56`} value={form.category} onChange={(e) => set('category', e.target.value)}>
               <option value="" disabled>Categories</option>
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              {CATEGORIES.filter((c) => c !== 'Other').map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
 

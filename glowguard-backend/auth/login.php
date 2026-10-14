@@ -26,6 +26,14 @@ if ($user['status'] === 'deactivated') {
     json_error('This account has been deactivated. Please contact support.', 403);
 }
 
+if ($user['status'] === 'pending') {
+    json_error('Your account is awaiting admin approval. You can sign in once it is approved.', 403);
+}
+
+if ($user['status'] === 'rejected') {
+    json_error('Your sign-up request was not approved. Please contact support.', 403);
+}
+
 $token = issue_token($pdo, (int) $user['id']);
 
 json_out(['token' => $token, 'user' => public_user($user)]);

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '../context/AppContext'
+import { usePeriod } from '../api/usePeriod'
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
@@ -40,7 +41,7 @@ export default function Tracker() {
   const firstName = user?.name?.trim()?.split(/\s+/)[0] || ''
 
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()))
-  const [timeOfDay, setTimeOfDay] = useState('AM')
+  const [timeOfDay, setTimeOfDay] = usePeriod('AM')
   const [selectedDate, setSelectedDate] = useState(dateKey(new Date()))
   const [routines, setRoutines] = useState({})
   const [loading, setLoading] = useState(true)
@@ -98,24 +99,24 @@ export default function Tracker() {
   const filteredProducts = useMemo(() => {
     const routine = routines[selectedDate] || []
 
-    // A product taken out of just this period (AM or PM) for the day isn't shown.
-    const scheduledIds = new Set(
-      routine
-        .filter((entry) => (timeOfDay === 'PM' ? entry.removedPM : entry.removedAM) !== true)
-        .map((entry) => String(entry.productId))
-    )
+    const byId = new Map(products.map((product) => [String(product.id), product]))
 
-    return products.filter((product) => {
-      if (!scheduledIds.has(String(product.id))) return false
+    // Follow the routine's own order (the one set by dragging on the Routine
+    // page). A product taken out of just this period (AM or PM) isn't shown.
+    return routine
+      .filter((entry) => (timeOfDay === 'PM' ? entry.removedPM : entry.removedAM) !== true)
+      .map((entry) => byId.get(String(entry.productId)))
+      .filter((product, index, list) => {
+        if (!product || list.indexOf(product) !== index) return false
 
-      const productTime =
-        String(product.timeOfDay || '').toUpperCase()
+        const productTime =
+          String(product.timeOfDay || '').toUpperCase()
 
-      // 'Both' products belong to the AM *and* PM view.
-      if (!productTime || productTime === 'BOTH') return true
+        // 'Both' products belong to the AM *and* PM view.
+        if (!productTime || productTime === 'BOTH') return true
 
-      return productTime === timeOfDay
-    })
+        return productTime === timeOfDay
+      })
   }, [products, timeOfDay, routines, selectedDate])
 
   const isCompleted = (productId, date) => {

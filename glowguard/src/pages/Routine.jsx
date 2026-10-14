@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useApp } from '../context/AppContext'
-import { findClashes, skinTypeKey } from '../api/services'
+import { findClashes, skinTypeKey, reorderRoutine } from '../api/services'
+import { usePeriod } from '../api/usePeriod'
 import Modal from '../components/Modal'
 import ProductForm from '../components/ProductForm'
 
@@ -33,6 +34,40 @@ function startOfWeek(d) {
   return x
 }
 
+// ---- drag-to-reorder helpers -------------------------------------------
+
+// Puts `order` (product ids) into the slots those products already occupy in
+// `list`, so cards hidden from this AM/PM view keep their place.
+function applyOrder(list, order) {
+  const idx = order.map((pid) => list.findIndex((i) => Number(i.productId) === pid))
+  if (idx.some((i) => i === -1)) return list
+  const out = list.slice()
+  const slots = [...idx].sort((a, b) => a - b)
+  slots.forEach((slot, k) => { out[slot] = list[idx[k]] })
+  return out
+}
+
+function dragSnapshot(st, delta) {
+  return {
+    id: st.id, from: st.from, to: st.to, delta,
+    ids: st.ids, tops: st.tops, heights: st.heights, gap: st.gap,
+  }
+}
+
+// How far every card must slide (px) so the dragged card's new slot is free.
+function dragShifts(d) {
+  const order = d.ids.slice()
+  order.splice(d.to, 0, order.splice(d.from, 1)[0])
+  const out = {}
+  let y = d.tops[0]
+  order.forEach((pid) => {
+    const i = d.ids.indexOf(pid)
+    out[pid] = y - d.tops[i]
+    y += d.heights[i] + d.gap
+  })
+  return out
+}
+
 export default function Routine() {
   const {
     user,
@@ -61,7 +96,7 @@ export default function Routine() {
   const [menuStyle, setMenuStyle] = useState({ top: 0, left: 0 })
 
   // AM / PM switch
-  const [timeOfDay, setTimeOfDay] = useState(
+  const [timeOfDay, setTimeOfDay] = usePeriod(
     new Date().getHours() >= 12 ? 'PM' : 'AM'
   )
 
@@ -291,6 +326,8 @@ export default function Routine() {
   // ADD PRODUCT FROM SHELF
   // --------------------------------------------------
 
+  const addedIds = new Set(visibleItems.map((i) => String(i.productId)))
+
   const quickAdd = async (productId) => {
     try {
       const existing = items.find(
@@ -329,11 +366,176 @@ export default function Routine() {
         }
       }
 
-      setAddPicker(false)
-
+      // Stay on the shelf list so more products can be added.
       await reload()
     } catch (error) {
       console.error('Failed to add product to routine:', error)
+    }
+  }
+
+  // --------------------------------------------------
+  // DRAG A CARD TO REORDER IT
+  // Mouse: click and drag. Phone / tablet: press and hold the card for a
+  // moment, then drag (a quick swipe still scrolls the page as usual).
+  // --------------------------------------------------
+
+  const cardRefs = useRef({})
+  const dragRef = useRef(null)
+  const dragCleanup = useRef(null)
+  const latest = useRef({})
+  const [drag, setDrag] = useState(null)
+
+  // Show the new order straight away, save it, then re-sync with the server.
+  const saveOrder = async (newIds) => {
+    setItems((prev) => applyOrder(prev, newIds))
+    try {
+      await reorderRoutine(dateKey, newIds)
+    } catch (error) {
+      console.error('Failed to save routine order:', error)
+      notify('Could not save the new order.', false)
+    }
+    await reload()
+  }
+  latest.current = { saveOrder }
+
+  useEffect(() => {
+    // While a card is being dragged on a touch screen, stop the page scrolling.
+    const block = (e) => {
+      if (dragRef.current?.active && e.cancelable) e.preventDefault()
+    }
+    window.addEventListener('touchmove', block, { passive: false })
+    return () => {
+      window.removeEventListener('touchmove', block)
+      dragCleanup.current?.()
+    }
+  }, [])
+
+  const startDrag = (e, id) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return
+    // Presses on the tick button, the ⋯ menu etc. must keep working normally.
+    if (e.target.closest('button, a, input, select, textarea, [data-routine-menu]')) return
+    if (dragRef.current || visibleItems.length < 2) return
+
+    const ids = visibleItems.map((i) => Number(i.productId))
+    const els = ids.map((pid) => cardRefs.current[pid])
+    if (els.some((el) => !el)) return
+
+    const rects = els.map((el) => el.getBoundingClientRect())
+    const from = ids.indexOf(Number(id))
+    const st = {
+      id: Number(id),
+      ids,
+      from,
+      to: from,
+      tops: rects.map((r) => r.top),
+      heights: rects.map((r) => r.height),
+      gap: rects[1].top - rects[0].bottom,
+      startX: e.clientX,
+      startY: e.clientY,
+      type: e.pointerType,
+      active: false,
+      timer: null,
+    }
+    dragRef.current = st
+
+    const cleanup = () => {
+      clearTimeout(st.timer)
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onCancel)
+      dragCleanup.current = null
+      if (dragRef.current === st) dragRef.current = null
+    }
+
+    const activate = () => {
+      st.active = true
+      if (navigator.vibrate) navigator.vibrate(12)
+      setDrag(dragSnapshot(st, 0))
+    }
+
+    const onMove = (ev) => {
+      const dx = ev.clientX - st.startX
+      const dy = ev.clientY - st.startY
+
+      if (!st.active) {
+        const moved = Math.hypot(dx, dy)
+        if (st.type === 'mouse') {
+          if (moved < 5) return
+          activate()
+        } else {
+          // Finger moved before the hold finished: the user is scrolling.
+          if (moved > 8) cleanup()
+          return
+        }
+      }
+
+      if (ev.cancelable) ev.preventDefault()
+
+      const last = st.ids.length - 1
+      const delta = Math.min(
+        Math.max(dy, st.tops[0] - st.tops[st.from]),
+        st.tops[last] + st.heights[last] - st.heights[st.from] - st.tops[st.from]
+      )
+
+      // New slot = number of other cards whose centre is above the dragged card's centre.
+      const centre = st.tops[st.from] + st.heights[st.from] / 2 + delta
+      let to = 0
+      st.ids.forEach((_, i) => {
+        if (i !== st.from && st.tops[i] + st.heights[i] / 2 < centre) to += 1
+      })
+      st.to = to
+      setDrag(dragSnapshot(st, delta))
+    }
+
+    const onUp = () => {
+      const wasActive = st.active
+      cleanup()
+      setDrag(null)
+      if (!wasActive || st.to === st.from) return
+
+      const newIds = st.ids.slice()
+      newIds.splice(st.to, 0, newIds.splice(st.from, 1)[0])
+      latest.current.saveOrder(newIds)
+    }
+
+    const onCancel = () => {
+      cleanup()
+      setDrag(null)
+    }
+
+    window.addEventListener('pointermove', onMove, { passive: false })
+    window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onCancel)
+    dragCleanup.current = cleanup
+
+    if (st.type !== 'mouse') st.timer = setTimeout(activate, 250)
+  }
+
+  const shifts = drag ? dragShifts(drag) : null
+
+  const cardDragStyle = (pid) => {
+    const base = {
+      userSelect: 'none',
+      WebkitUserSelect: 'none',
+      WebkitTouchCallout: 'none',
+      cursor: visibleItems.length > 1 ? 'grab' : undefined,
+    }
+    if (!drag) return base
+    if (pid === drag.id) {
+      return {
+        ...base,
+        cursor: 'grabbing',
+        transform: `translateY(${drag.delta}px)`,
+        transition: 'none',
+        zIndex: 30,
+        opacity: 0.95,
+        filter: 'drop-shadow(0 8px 14px rgba(0,0,0,.28))',
+      }
+    }
+    return {
+      ...base,
+      transform: `translateY(${shifts[pid] || 0}px)`,
+      transition: 'transform 160ms ease',
     }
   }
 
@@ -755,7 +957,11 @@ export default function Routine() {
                 return (
                   <div
                     key={item.productId}
+                    ref={(el) => { cardRefs.current[Number(item.productId)] = el }}
                     className="relative"
+                    style={cardDragStyle(Number(item.productId))}
+                    onPointerDown={(e) => startDrag(e, item.productId)}
+                    onContextMenu={(e) => { if (dragRef.current) e.preventDefault() }}
                   >
 
                     <div className="
@@ -868,12 +1074,12 @@ export default function Routine() {
                             setMenuStyle(
                               openUp
                                 ? {
-                                    left,
-                                    bottom:
-                                      window.innerHeight -
-                                      r.top +
-                                      4,
-                                  }
+                                  left,
+                                  bottom:
+                                    window.innerHeight -
+                                    r.top +
+                                    4,
+                                }
                                 : { left, top: r.bottom + 4 }
                             )
                             setMenuFor(p.id)
@@ -1202,7 +1408,11 @@ export default function Routine() {
                 <button
                   type="button"
                   key={p.id}
-                  onClick={() => quickAdd(p.id)}
+                  onClick={() =>
+                    addedIds.has(String(p.id))
+                      ? handleRemoveFromRoutine(p)
+                      : quickAdd(p.id)
+                  }
                   className="
                     w-full
                     card
@@ -1251,7 +1461,7 @@ export default function Routine() {
                     text-lg
                     shrink-0
                   ">
-                    ＋
+                    {addedIds.has(String(p.id)) ? '✓' : '＋'}
                   </span>
 
                 </button>
@@ -1263,6 +1473,7 @@ export default function Routine() {
             /* NEW PRODUCT */
             <ProductForm
               product={null}
+              routineItems={items}
               onCancel={() => setShowForm(false)}
               onSaved={addProductFlow}
             />
@@ -1285,6 +1496,7 @@ export default function Routine() {
           {editProduct && (
             <ProductForm
               product={editProduct}
+              routineItems={items}
               onCancel={() => setEditProduct(null)}
               onSaved={handleEditSave}
             />

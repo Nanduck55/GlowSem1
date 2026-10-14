@@ -17,6 +17,13 @@ function ingredient_names(PDO $pdo): array
 switch ($_SERVER['REQUEST_METHOD']) {
 
     case 'GET':
+        // ?details=1 returns each active with its stored description.
+        // Without it the response is the same plain list of names as before.
+        if (isset($_GET['details'])) {
+            $stmt = $pdo->query('SELECT ingredient_name AS name, description FROM active_ingredients ORDER BY ingredient_name ASC');
+            json_out($stmt->fetchAll(PDO::FETCH_ASSOC));
+            break;
+        }
         json_out(ingredient_names($pdo));
         break;
 

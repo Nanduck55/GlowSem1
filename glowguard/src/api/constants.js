@@ -7,7 +7,7 @@ export const CATEGORIES = [
 // Skin types a GlowCouncil recommendation can be aimed at. The Landing skin
 // quiz produces Oily / Dry / Combination / Balanced; Sensitive is available
 // for consultants to curate ahead of a quiz result that covers it.
-export const SKIN_TYPES = ['Oily', 'Dry', 'Combination', 'Balanced', 'Sensitive']
+export const SKIN_TYPES = ['Oily', 'Dry', 'Combination', 'Normal', 'Sensitive']
 
 // Severity of a Safety Clash Rule, most serious first. Stored in the existing
 // ingredient_clash_rules.severity_level column.

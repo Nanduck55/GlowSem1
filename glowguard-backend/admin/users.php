@@ -1,7 +1,8 @@
 <?php
 /**
  * Admin user management endpoint.
- * GET /admin/users.php -> List all users
+ * GET /admin/users.php -> List all users (pending/rejected sign-up requests
+ *                           are not listed here, see requests.php)
  * GET /admin/users.php?id=X -> Single user
  * PUT /admin/users.php -> Body { id, status: 'active'|'deactivated' }
  */
@@ -12,7 +13,7 @@ $admin = require_admin($pdo);
 
 function find_user(PDO $pdo, int $id): ?array
 {
-    $stmt = $pdo->prepare('SELECT user_id, email, role, status, date_joined FROM users WHERE user_id = :id');
+    $stmt = $pdo->prepare('SELECT user_id, full_name, email, role, status, date_joined FROM users WHERE user_id = :id');
     $stmt->execute(['id' => $id]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     return $row ? normalize_user($row) : null;
@@ -27,7 +28,7 @@ switch ($_SERVER['REQUEST_METHOD']) {
             json_out(public_user($user));
         }
         
-        $stmt = $pdo->query('SELECT user_id, email, role, status, date_joined FROM users ORDER BY date_joined DESC, user_id DESC');
+        $stmt = $pdo->query("SELECT user_id, full_name, email, role, status, date_joined FROM users WHERE COALESCE(status, 'active') NOT IN ('pending', 'rejected') ORDER BY date_joined DESC, user_id DESC");
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
         json_out(array_map(fn($row) => public_user(normalize_user($row)), $rows));
         break;

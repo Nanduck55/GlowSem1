@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { logoutUser } from '../../api/services'
 import PortalProfileMenu from '../../components/PortalProfileMenu'
+import BackButton from '../../components/BackButton'
 
 const LogoutIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 shrink-0" aria-hidden="true">
@@ -210,6 +211,7 @@ export default function ConsultantLayout() {
           </header>
 
           <main className="px-4 sm:px-6 md:px-8 lg:px-10 xl:px-14 2xl:px-20 py-6 md:py-10">
+            <BackButton accent="plum" />
             <Outlet />
           </main>
         </div>

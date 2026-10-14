@@ -265,6 +265,7 @@ function PasswordField({
   onChange,
   placeholder,
   autoComplete,
+  minLength = 6,
 }) {
   const [visible, setVisible] = useState(false)
 
@@ -276,9 +277,9 @@ function PasswordField({
         onChange={onChange}
         placeholder={placeholder}
         autoComplete={autoComplete}
-        minLength={6}
+        minLength={minLength}
         required
-        className={`${inputClass} pr-12`}
+        className={`${inputClass} pr-12 [&::-ms-reveal]:hidden [&::-ms-clear]:hidden`}
       />
 
       <button
@@ -288,7 +289,7 @@ function PasswordField({
         aria-label={visible ? 'Hide password' : 'Show password'}
         aria-pressed={visible}
       >
-        <EyeIcon off={visible} />
+        <EyeIcon off={!visible} />
       </button>
     </div>
   )
@@ -311,6 +312,7 @@ export default function Auth() {
   const [busy, setBusy] = useState(false)
   const [localToast, setLocalToast] = useState(null)
   const [remember, setRemember] = useState(true)
+  const [accountType, setAccountType] = useState('user')
 
   const toastTimer = useRef(null)
 
@@ -415,12 +417,47 @@ export default function Auth() {
     return
   }
 
-  if (mode === 'register' && password.length < 6) {
-    showToast(
-      'Password must contain at least 6 characters.',
-      false
-    )
-    return
+  if (mode === 'register') {
+    // Require at least 8 characters with both letters and numbers.
+    // Reject common weak passwords and simple numeric/sequential patterns.
+    const hasLetter = /[A-Za-z]/.test(password)
+    const hasNumber = /\d/.test(password)
+    const normalizedPassword = password.toLowerCase()
+    const weakPasswords = new Set([
+      '12345678',
+      '87654321',
+      'password',
+      'password1',
+      'password123',
+      'qwerty123',
+      'abc12345',
+      '11111111',
+      '00000000',
+      'abcdefgh',
+      'qwertyui',
+    ])
+    const onlyRepeatedCharacter = /^(.)\1+$/.test(password)
+    const simpleSequence =
+      /^(012345678|123456789|987654321|876543210)$/.test(password)
+
+    if (password.length < 8) {
+      showToast('Password must be at least 8 characters long.', false)
+      return
+    }
+
+    if (!hasLetter || !hasNumber) {
+      showToast('Use a combination of letters and numbers.', false)
+      return
+    }
+
+    if (
+      weakPasswords.has(normalizedPassword) ||
+      onlyRepeatedCharacter ||
+      simpleSequence
+    ) {
+      showToast('That password is too weak. Choose a less predictable password.', false)
+      return
+    }
   }
 
   if (mode === 'register' && password !== confirmPassword) {
@@ -462,6 +499,7 @@ export default function Auth() {
         password,
         skinType: pendingSkinType,
         skinGoal: pendingSkinGoal,
+        role: accountType,
       })
 
       // The account now owns the quiz result, so it is safe to clear the
@@ -476,9 +514,12 @@ export default function Auth() {
       localStorage.setItem(`gg_new_signup:${email.toLowerCase()}`, '1')
 
       showToast(
-        'Account created successfully. Please sign in.',
+        accountType === 'user'
+          ? 'Account created successfully. Please sign in.'
+          : 'Request sent. An admin will review your account before you can sign in.',
         true
       )
+      setAccountType('user')
 
       setForm({
         name: '',
@@ -596,10 +637,11 @@ export default function Auth() {
 
               {/* Brand */}
               <div className="mb-6 flex flex-col items-center max-lg:mb-5 max-[430px]:mb-4">
-                <div className="relative grid h-[68px] w-[68px] place-items-center rounded-[21px] bg-[radial-gradient(circle_at_32%_28%,rgba(255,255,255,.26),transparent_26%),linear-gradient(145deg,#5f976c,#173b25)] text-white shadow-[0_14px_32px_rgba(35,91,55,.25),0_0_0_6px_rgba(107,158,117,.09),inset_0_1px_0_rgba(255,255,255,.24)] max-[430px]:h-[62px] max-[430px]:w-[62px] max-[380px]:h-[58px] max-[380px]:w-[58px]">
-                  <ShieldIcon className="relative z-10 h-7 w-7 max-[430px]:h-6 max-[430px]:w-6" />
-                  <span className="absolute inset-[7px] rounded-[15px] border border-white/30 max-[430px]:inset-[6px]" />
-                </div>
+                <img
+                  src="/Icon1.png"
+                  alt="GlowGuard logo"
+                  className="h-[68px] w-[68px] object-contain max-[430px]:h-[62px] max-[430px]:w-[62px] max-[380px]:h-[58px] max-[380px]:w-[58px]"
+                />
 
                 <div className="mt-3 text-2xl font-bold tracking-[-.6px] text-gg-700 max-[430px]:text-xl">
                   GlowGuard
@@ -736,16 +778,17 @@ export default function Auth() {
                 url("${signupImage}")
               `,
             }}
-            className="flex h-full w-full box-border flex-col items-center justify-start bg-cover bg-center px-[58px] pb-5 pt-6 text-center max-lg:min-h-[100dvh] max-lg:h-auto max-lg:justify-center max-lg:overflow-y-auto max-lg:overscroll-contain max-lg:px-5 max-lg:py-6 max-lg:pb-[calc(24px+env(safe-area-inset-bottom))] max-md:px-4 max-md:py-6 max-[430px]:py-5"
+            className="flex h-full w-full box-border flex-col items-center justify-start bg-cover bg-center px-[58px] pb-5 pt-6 text-center lg:overflow-y-auto lg:overscroll-contain max-lg:min-h-[100dvh] max-lg:h-auto max-lg:justify-center max-lg:overflow-y-auto max-lg:overscroll-contain max-lg:px-5 max-lg:py-6 max-lg:pb-[calc(24px+env(safe-area-inset-bottom))] max-md:px-4 max-md:py-6 max-[430px]:py-5"
           >
-            <div className="mx-auto w-full max-w-[390px]">
+            <div className="mx-auto w-full max-w-[390px] lg:max-w-[470px]">
 
               {/* Brand */}
               <div className="mb-3.5 flex flex-col items-center max-lg:mb-4">
-                <div className="relative grid h-[52px] w-[52px] place-items-center rounded-2xl bg-gradient-to-br from-[#5f976c] to-[#173b25] text-white shadow-[0_12px_28px_rgba(45,90,61,.22)] max-[430px]:h-[48px] max-[430px]:w-[48px]">
-                  <ShieldIcon className="h-5 w-5 max-[430px]:h-[18px] max-[430px]:w-[18px]" />
-                  <span className="absolute inset-[6px] rounded-xl border border-white/30 max-[430px]:inset-[5px]" />
-                </div>
+                <img
+                  src="/Icon1.png"
+                  alt="GlowGuard logo"
+                  className="h-[52px] w-[52px] object-contain max-[430px]:h-[48px] max-[430px]:w-[48px]"
+                />
 
                 <div className="mt-1.5 text-[19px] font-bold text-gg-700 max-[430px]:text-[18px]">
                   GlowGuard
@@ -766,68 +809,150 @@ export default function Auth() {
                 Create your account and keep your skincare journey organized.
               </p>
 
-              <FeatureIcons />
+              <div className="[@media(max-height:800px)]:hidden">
+                <FeatureIcons />
+              </div>
 
               <Divider>
                 create with email
               </Divider>
 
+              {/* Account type: staff roles need admin approval */}
+              <div className="mb-2 text-left">
+                <p className="mb-1 text-[10px] font-semibold uppercase tracking-[1px] text-gray-500">
+                  I am joining as
+                </p>
+
+                <div className="grid grid-cols-1 gap-2 lg:grid-cols-3">
+                  {[
+                    {
+                      value: 'user',
+                      label: 'User',
+                      desc: 'Track my skincare',
+                      Icon: DropletIcon,
+                    },
+                    {
+                      value: 'consultant',
+                      label: 'Consultant',
+                      phoneLabel: 'Beauty Consultant',
+                      desc: 'Curate recommendations',
+                      Icon: LeafIcon,
+                    },
+                    {
+                      value: 'admin',
+                      label: 'Admin',
+                      desc: 'Manage the platform',
+                      Icon: ShieldIcon,
+                    },
+                  ].map(({ value, label, phoneLabel, desc, Icon }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      aria-pressed={accountType === value}
+                      onClick={() => setAccountType(value)}
+                      className={`grid grid-cols-[auto_1fr] items-center gap-x-2.5 gap-y-0.5 rounded-[14px] border-2 px-3 py-2 text-left transition lg:gap-x-1.5 ${
+                        accountType === value
+                          ? 'border-gg-700 bg-[#eaf5ec]'
+                          : 'border-gray-200 bg-white hover:border-gg-700/60'
+                      }`}
+                    >
+                      <Icon className="row-span-2 h-4 w-4 text-gg-700 lg:row-span-1" />
+
+                      <span className="text-[12px] font-semibold leading-tight text-ink">
+                        {phoneLabel ? (
+                          <>
+                            <span className="lg:hidden">{phoneLabel}</span>
+                            <span className="hidden lg:inline">{label}</span>
+                          </>
+                        ) : (
+                          label
+                        )}
+                      </span>
+
+                      <span className="col-start-2 text-[10px] leading-tight text-gray-500 lg:col-span-2 lg:col-start-1">
+                        {desc}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
+                {accountType !== 'user' && (
+                  <p className="mt-1.5 text-[10px] leading-relaxed text-gray-500">
+                    An admin reviews staff accounts before you can sign in.
+                  </p>
+                )}
+              </div>
+
               {/* Register Inputs */}
               <div className="space-y-2">
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(event) =>
-                    updateField(
-                      'name',
-                      event.target.value
-                    )
-                  }
-                  placeholder="Full name"
-                  autoComplete="name"
-                  required
-                  className={smallInputClass}
-                />
+                <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
+                  <input
+                    type="text"
+                    value={form.name}
+                    onChange={(event) =>
+                      updateField(
+                        'name',
+                        event.target.value
+                      )
+                    }
+                    placeholder="Full name"
+                    autoComplete="name"
+                    required
+                    className={smallInputClass}
+                  />
 
-                <input
-                  type="email"
-                  value={form.email}
-                  onChange={(event) =>
-                    updateField(
-                      'email',
-                      event.target.value
-                    )
-                  }
-                  placeholder="Email address"
-                  autoComplete="email"
-                  required
-                  className={smallInputClass}
-                />
+                  <input
+                    type="email"
+                    value={form.email}
+                    onChange={(event) =>
+                      updateField(
+                        'email',
+                        event.target.value
+                      )
+                    }
+                    placeholder={
+                      accountType === 'user'
+                        ? 'Email address'
+                        : 'Work email address'
+                    }
+                    autoComplete="email"
+                    required
+                    className={smallInputClass}
+                  />
+                </div>
 
-                <PasswordField
-                  value={form.password}
-                  onChange={(event) =>
-                    updateField(
-                      'password',
-                      event.target.value
-                    )
-                  }
-                  placeholder="Create a password"
-                  autoComplete="new-password"
-                />
+                <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
+                  <PasswordField
+                    value={form.password}
+                    onChange={(event) =>
+                      updateField(
+                        'password',
+                        event.target.value
+                      )
+                    }
+                    placeholder="Create a password"
+                    autoComplete="new-password"
+                    minLength={8}
+                  />
 
-                <PasswordField
-                  value={form.confirm}
-                  onChange={(event) =>
-                    updateField(
-                      'confirm',
-                      event.target.value
-                    )
-                  }
-                  placeholder="Confirm password"
-                  autoComplete="new-password"
-                />
+                  <PasswordField
+                    value={form.confirm}
+                    onChange={(event) =>
+                      updateField(
+                        'confirm',
+                        event.target.value
+                      )
+                    }
+                    placeholder="Confirm password"
+                    autoComplete="new-password"
+                    minLength={8}
+                  />
+                </div>
               </div>
+
+              <p className="mt-2 text-left text-[10px] leading-relaxed text-gray-500">
+                Use at least 8 characters, including letters and numbers. Avoid common or predictable passwords.
+              </p>
 
               {/* Create Account */}
               <button

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { NavLink, Link, useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { logoutUser } from '../api/services'
+import Wordmark from './Wordmark'
 
 const links = [
   { to: '/', label: 'Home', icon: HomeIcon },
@@ -235,8 +236,8 @@ export default function Navbar() {
   justify-between
 ">
           <Link to="/" className="flex items-center gap-2 text-white font-extrabold text-xl">
-            <span className="w-8 h-8 grid place-items-center rounded-lg bg-gg-100 text-gg-700 text-base">✦</span>
-            GlowGuard
+            <img src="/Icon1.png" alt="GlowGuard logo" className="w-8 h-8 rounded-lg object-contain" />
+            <Wordmark tone="dark" className="text-[1.65rem]" />
           </Link>
 
           <nav className="hidden md:flex items-center gap-1">

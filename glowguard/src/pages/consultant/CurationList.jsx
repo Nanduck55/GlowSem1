@@ -75,21 +75,25 @@ export default function CurationList() {
     <div className="max-w-4xl lg:max-w-5xl xl:max-w-6xl 2xl:max-w-[90rem]">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <PageTitle sub="Create and manage recommendations by skin type.">GlowCouncil Curation</PageTitle>
-        <button className={`${btnPrimary} sm:!text-base sm:!px-6 sm:mt-14`} onClick={() => navigate('/consultant/curation/new')}>
+
+        <button
+          className={`${btnPrimary} rounded-xl !px-6 !py-3 mb-5 whitespace-nowrap sm:!text-base sm:!px-7 sm:!py-3 sm:mt-14 sm:mb-6`}
+          onClick={() => navigate('/consultant/curation/new')}
+        >
           Add Recommendation
         </button>
       </div>
 
       <div className="grid grid-cols-2 sm:flex gap-3 mb-5 sm:mb-6">
         <input className={`${inputCls} col-span-2 sm:flex-1`} placeholder="Search recommendation"
-               value={search} onChange={(e) => setSearch(e.target.value)} />
+          value={search} onChange={(e) => setSearch(e.target.value)} />
         <select className={`${inputCls} sm:!w-[170px]`} value={skinType} onChange={(e) => setSkinType(e.target.value)}>
           <option value="">Skin Type</option>
           {SKIN_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
         </select>
         <select className={`${inputCls} sm:!w-[170px]`} value={category} onChange={(e) => setCategory(e.target.value)}>
           <option value="">Category</option>
-          {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+          {CATEGORIES.filter((c) => c !== 'Other').map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
 

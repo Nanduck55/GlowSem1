@@ -18,15 +18,15 @@ function sendEmail(string $toEmail, string $subject, string $htmlBody): bool
         $mail->SMTPAuth   = true;
         
         // Gmail credentials
-        $mail->Username   = 'rainanorte61@gmail.com'; 
-        $mail->Password   = 'dhvfcvarxatugeyi'; 
-        $mail->setFrom('rainanorte61@gmail.com', 'GlowGuard Support');
+        $mail->Username   = 'chans0000q@gmail.com'; 
+        $mail->Password   = 'cecgtqkrktmxamjf'; 
+        $mail->setFrom('chans0000q@gmail.com', 'GlowGuard Support');
         
         // Change these 2 lines in config/mailer.php
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS; // SSL instead of STARTTLS
         $mail->Port       = 465;                        // Port 465 instead of 587
         // Message Setup
-        $mail->setFrom('rainanorte61@gmail.com', 'GlowGuard Support');
+        $mail->setFrom('chans0000q@gmail.com', 'GlowGuard Support');
         $mail->addAddress($toEmail);
         $mail->isHTML(true);
         $mail->Subject = $subject;

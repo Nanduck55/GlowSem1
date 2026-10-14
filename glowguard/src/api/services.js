@@ -17,6 +17,7 @@ export async function registerUser({
   password,
   skinType = null,
   skinGoal = null,
+  role = 'user',
 }) {
   const { data } = await api.post('/auth/register.php', {
     name,
@@ -24,6 +25,7 @@ export async function registerUser({
     password,
     skin_type: skinType,
     skin_goal: skinGoal,
+    role,
   })
 
   // Registration does NOT create a browser session.
@@ -138,6 +140,10 @@ export async function setRoutinePeriodRemoved(date, productId, period, removed) 
   return (await api.put('/routines.php', { date, productId, period, removed })).data
 }
 
+export async function reorderRoutine(date, order) {
+  return (await api.put('/routines.php', { date, order })).data
+}
+
 /* ------------------------------------------------------------------ */
 /*  TRACKER                                                            */
 /* ------------------------------------------------------------------ */
@@ -157,6 +163,14 @@ export async function fetchAdminData() {
     api.get('/clash-rules.php'),
   ])
   return { ingredients: ingredients.data, rules: rules.data }
+}
+
+// { 'Retinol': 'Promotes cell turnover…', … } — read from active_ingredients.description
+export async function fetchIngredientDescriptions() {
+  const { data } = await api.get('/admin/ingredients.php', { params: { details: 1 } })
+  const map = {}
+  ;(Array.isArray(data) ? data : []).forEach((i) => { map[i.name] = i.description || '' })
+  return map
 }
 
 export async function addIngredient(name) {
@@ -213,7 +227,7 @@ export async function deleteRecommendation(id) {
  */
 export function skinTypeKey(value) {
   const base = String(value ?? '').replace(/\s*skin\s*$/i, '').trim().toLowerCase()
-  if (base === 'normal') return 'Balanced'
+  if (base === 'normal') return 'Normal'
   return SKIN_TYPES.find((t) => t.toLowerCase() === base) ?? ''
 }
 
@@ -252,6 +266,19 @@ export async function setUserActive(id, active) {
   return normalizeUser(data.user ?? data)
 }
 
+/* Staff sign-up requests (consultant / admin) — admin/requests.php.   */
+/*  GET ?                  -> pending + rejected requests              */
+/*  PUT {id, action}       -> 'approve' | 'reject', returns the user   */
+export async function fetchRequests() {
+  const { data } = await api.get('/admin/requests.php')
+  return (Array.isArray(data) ? data : data.requests ?? []).map(normalizeUser)
+}
+
+export async function decideRequest(id, action) {
+  const { data } = await api.put('/admin/requests.php', { id, action })
+  return normalizeUser(data.user ?? data)
+}
+
 /* ------------------------------------------------------------------ */
 /*  SAFETY ENGINE — evaluates a routine against the clash rules        */
 /*  (pure function, no storage — unchanged from before)                */
@@ -269,4 +296,52 @@ export function findClashes(routineItems, products, rules) {
   return alerts
 }
 
-export { CATEGORIES }                                                                  
+/**
+ * Clash check for the Add / Edit Product form. Looks at two sources:
+ *   1. selected actives vs. selected actives (within the product itself)
+ *   2. selected actives vs. actives of products already in the routine
+ * Only routine products that share an AM / PM period with the draft count,
+ * so a PM-only product never clashes with an AM-only one.
+ *
+ * Returns [{ rule, within, matches: [{ name, periods }] }]
+ */
+export function findDraftClashes(draft, routineItems, products, rules) {
+  const draftActives = draft.actives ?? []
+  const periodsOf = (timeOfDay) => {
+    const t = String(timeOfDay || '').toUpperCase()
+    return t === 'AM' || t === 'PM' ? [t] : ['AM', 'PM']
+  }
+  const draftPeriods = periodsOf(draft.timeOfDay)
+
+  // Routine products (other than the draft itself) and the shared periods
+  // they are actually shown in — a period they were removed from is skipped.
+  const existing = []
+  for (const item of routineItems ?? []) {
+    const product = products.find((p) => String(p.id) === String(item.productId))
+    if (!product || String(product.id) === String(draft.id)) continue
+    const shared = periodsOf(product.timeOfDay).filter(
+      (per) =>
+        draftPeriods.includes(per) &&
+        (per === 'PM' ? item.removedPM : item.removedAM) !== true
+    )
+    if (shared.length) existing.push({ product, periods: shared })
+  }
+
+  const alerts = []
+  for (const rule of rules) {
+    const within = draftActives.includes(rule.a) && draftActives.includes(rule.b)
+    const matches = existing
+      .filter(({ product }) => {
+        const theirs = product.actives ?? []
+        return (
+          (draftActives.includes(rule.a) && theirs.includes(rule.b)) ||
+          (draftActives.includes(rule.b) && theirs.includes(rule.a))
+        )
+      })
+      .map(({ product, periods }) => ({ name: product.name, periods }))
+    if (within || matches.length) alerts.push({ rule, within, matches })
+  }
+  return alerts
+}
+
+export { CATEGORIES }

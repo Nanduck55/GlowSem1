@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -75,6 +77,15 @@ html.dark .input {
 html.dark .text-ink,
 html.dark .text-\[\#202621\],
 html.dark .text-\[\#263129\] {
+  color: #e7ede9 !important;
+}
+
+/* The "i" info icon in the Add/Edit Product form (text-ink/80, hover:text-ink)
+   is a different class from .text-ink, so it needs its own light colour here. */
+html.dark .text-ink\/80 {
+  color: rgba(231, 237, 233, 0.85) !important;
+}
+html.dark .text-ink\/80.hover\:text-ink:hover {
   color: #e7ede9 !important;
 }
 

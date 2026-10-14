@@ -19,7 +19,7 @@ import { getToken, clearToken } from './session'
  * QUICK CHECK: open  <VITE_API_URL>/auth/me.php  in your browser. If you see
  *   {"error":"Missing Authorization header."}  the backend URL is correct.
  */
-const DEFAULT_API_URL = 'http://localhost/GlowSem1/glowguard-backend'
+const DEFAULT_API_URL = '/api'
 
 // Trailing slashes are stripped so '/auth/login.php' never becomes '//auth/login.php'.
 const baseURL = (import.meta.env.VITE_API_URL || DEFAULT_API_URL).replace(/\/+$/, '')

@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { logoutUser } from '../../api/services'
 import PortalProfileMenu from '../../components/PortalProfileMenu'
+import BackButton from '../../components/BackButton'
 
 const LogoutIcon = () => (
   <svg
@@ -94,6 +95,23 @@ const UsersIcon = () => (
   </svg>
 )
 
+const RequestsIcon = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="h-6 w-6 shrink-0"
+    aria-hidden="true"
+  >
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M19 8v6M16 11h6" />
+  </svg>
+)
+
 const ChevronRight = () => (
   <svg
     viewBox="0 0 24 24"
@@ -114,6 +132,11 @@ const navItems = [
     to: '/admin/users',
     label: 'User Management',
     Icon: UsersIcon,
+  },
+  {
+    to: '/admin/requests',
+    label: 'Requests',
+    Icon: RequestsIcon,
   },
 ]
 
@@ -418,6 +441,7 @@ export default function AdminLayout() {
               md:py-10
             "
           >
+            <BackButton />
             <Outlet />
           </main>
         </div>

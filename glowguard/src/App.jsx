@@ -23,6 +23,7 @@ import Recommendations from './pages/Recommendations'
 import AdminLayout from './pages/admin/AdminLayout'
 import UsersList from './pages/admin/UsersList'
 import UserDetails from './pages/admin/UserDetails'
+import RequestsList from './pages/admin/RequestsList'
 import ConsultantLayout from './pages/consultant/ConsultantLayout'
 import RulesList from './pages/consultant/RulesList'
 import RuleDetails from './pages/consultant/RuleDetails'
@@ -249,6 +250,7 @@ function AppLayout() {
             <Route index element={<Navigate to="users" replace />} />
             <Route path="users" element={<UsersList />} />
             <Route path="users/:id" element={<UserDetails />} />
+            <Route path="requests" element={<RequestsList />} />
           </Route>
 
           {/* Beauty Consultant area (its own sidebar layout + nested pages) */}

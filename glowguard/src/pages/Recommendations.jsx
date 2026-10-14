@@ -28,7 +28,7 @@ const SKIN_BLURBS = {
   Oily: 'Oily skin produces extra sebum, so it can look shiny as the day goes on. Lightweight, non-comedogenic products can help keep it feeling fresh.',
   Dry: 'Dry skin can feel tight or flaky when it lacks moisture. Gentle, hydrating products can help it feel comfortable.',
   Combination: 'Combination skin has both oily and dry areas, usually with more oil around the T-zone. Lightweight, balancing products can keep it comfortable.',
-  Balanced: 'Balanced skin is generally comfortable, neither too oily nor too dry. A consistent, gentle routine helps keep it that way.',
+  Normal: 'Normal skin is generally comfortable, neither too oily nor too dry. A consistent, gentle routine helps keep it that way.',
   Sensitive: 'Sensitive skin can react easily to new products and changes in weather. Gentle, soothing formulas are a good place to start.',
 }
 
@@ -395,6 +395,17 @@ export default function Recommendations() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Continue Routine button — bottom of the page, using GlowGuard theme */}
+      <div className="mt-8 mb-6 flex justify-center">
+        <button
+          type="button"
+          onClick={() => navigate('/routine')}
+          className={`${greenBtn} mt-4`}
+        >
+          Continue Routine
+        </button>
       </div>
 
       {picked && <AddToRoutineModal rec={picked} onClose={() => setPicked(null)} />}

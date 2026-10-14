@@ -5,7 +5,7 @@
  */
 
 const REC_CATEGORIES = ['Cleanser', 'Toner', 'Serum', 'Moisturizer', 'Sunscreen', 'Exfoliant', 'Mask', 'Other'];
-const REC_SKIN_TYPES = ['Oily', 'Dry', 'Combination', 'Balanced', 'Sensitive'];
+const REC_SKIN_TYPES = ['Oily', 'Dry', 'Combination', 'Normal', 'Sensitive'];
 
 /**
  * Maps a relational database row to the exact public array structure expected by React.

@@ -117,7 +117,7 @@ function PasswordField({ value, onChange, placeholder, autoComplete, autoFocus }
         placeholder={placeholder}
         autoComplete={autoComplete}
         autoFocus={autoFocus}
-        className={`${inputClass} pr-12`}
+        className={`${inputClass} pr-12 [&::-ms-reveal]:hidden [&::-ms-clear]:hidden`}
       />
 
       <button
@@ -127,7 +127,7 @@ function PasswordField({ value, onChange, placeholder, autoComplete, autoFocus }
         aria-label={visible ? 'Hide password' : 'Show password'}
         aria-pressed={visible}
       >
-        <EyeIcon off={visible} />
+        <EyeIcon off={!visible} />
       </button>
     </div>
   )

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
-import { SEVERITY_LEVELS, SOURCE_MAX_LENGTH } from '../../api/constants'
+import { SEVERITY_LEVELS } from '../../api/constants'
 import { PageTitle, Loading } from '../admin/adminUi'
 import { panelCls, inputCls, btnPrimary, btnOutline } from './consultantUi'
 
@@ -40,13 +40,14 @@ export default function RuleForm({ mode }) {
 
   const submit = async (e) => {
     e.preventDefault()
-    if (!form.a || !form.b) return notify('Choose both ingredients.', false)
+    // Validate every field before saving. Trim text fields so spaces alone
+    // are not accepted as valid values.
+    if (!form.a) return notify('Choose Ingredient A.', false)
+    if (!form.b) return notify('Choose Ingredient B.', false)
     if (form.a === form.b) return notify('Ingredient A and B must be different.', false)
     if (!form.severity) return notify('Choose a severity level.', false)
+    if (!form.source.trim()) return notify('Enter a source reference.', false)
     if (!form.message.trim()) return notify('Enter a rule message.', false)
-    if (form.source.trim().length > SOURCE_MAX_LENGTH) {
-      return notify(`Source reference must be ${SOURCE_MAX_LENGTH} characters or fewer.`, false)
-    }
 
     setBusy(true)
     try {
@@ -63,7 +64,7 @@ export default function RuleForm({ mode }) {
   }
 
   const renderSelect = (value, onChange, placeholder, list) => (
-    <select className={inputCls} value={value} onChange={(e) => onChange(e.target.value)}>
+    <select required className={inputCls} value={value} onChange={(e) => onChange(e.target.value)}>
       <option value="" disabled>{placeholder}</option>
       {list.map((i) => <option key={i} value={i}>{i}</option>)}
     </select>
@@ -91,11 +92,8 @@ export default function RuleForm({ mode }) {
           </div>
         </div>
 
-        <div className="flex items-baseline justify-between gap-3">
-          <p className="text-base sm:text-lg font-medium">Source References</p>
-          <span className="text-xs text-[#59464f]">{form.source.length}/{SOURCE_MAX_LENGTH}</span>
-        </div>
-        <textarea className={`${inputCls} mt-1`} rows={2} maxLength={SOURCE_MAX_LENGTH}
+        <p className="text-base sm:text-lg font-medium">Source References</p>
+        <textarea required className={`${inputCls} mt-1`} rows={2}
                   placeholder="Type Source Reference"
                   value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })} />
 
@@ -103,7 +101,7 @@ export default function RuleForm({ mode }) {
         <p className="text-xs mb-2">
           This message will appear when a newly added product has a recorded interaction with an ingredient already in the same routine.
         </p>
-        <textarea className={inputCls} rows={4} placeholder="Type Rule Message"
+        <textarea required className={inputCls} rows={4} placeholder="Type Rule Message"
                   value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
 
         <div className="mt-6 flex flex-wrap justify-center gap-3 sm:gap-6">

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { updateProfile } from '../api/services'
+import Wordmark from '../components/Wordmark'
 
 import heroBg from '../assets/landing/land bg.jpg'
 import heroBgMobile from '../assets/landing/land bg mobile.jpg'
@@ -155,7 +156,7 @@ const resultImages = {
     src: combinationSkin,
     alt: 'Close-up face representing a combination skin profile',
   },
-  'Balanced Skin': {
+  'Normal Skin': {
     src: balancedSkin,
     alt: 'Close-up face representing a balanced skin profile',
   },
@@ -226,7 +227,7 @@ function getQuizResult(answers) {
     type = 'Dry Skin'
     desc = 'Your skin may struggle to retain moisture. Layered hydration can help support comfort and a healthy-looking glow.'
   } else {
-    type = 'Balanced Skin'
+    type = 'Normal Skin'
     desc = 'Your skin is generally well-balanced. A consistent, gentle routine can help maintain it.'
   }
 
@@ -589,8 +590,8 @@ function SkinQuiz() {
           <nav aria-label="Main navigation" className="fixed top-5 left-1/2 -translate-x-1/2 z-[100] w-[calc(100%-2rem)] max-w-[1325px] bg-[#f0fdf4] backdrop-blur-xl border border-white/70 rounded-[22px] shadow-[0_10px_35px_rgba(32,65,43,.14)]">
             <div className="h-[76px] px-4 sm:px-6 lg:px-7 flex items-center justify-between">
               <button type="button" onClick={() => goTo('home')} className="flex items-center gap-2.5 text-ink text-xl sm:text-2xl font-extrabold focus:outline-none focus-visible:ring-2 focus-visible:ring-gg-500 focus-visible:ring-offset-2 rounded-xl">
-                <span className="w-10 h-10 grid place-items-center rounded-xl bg-gg-100 text-gg-700">✦</span>
-                GlowGuard
+                <img src="/Icon1.png" alt="GlowGuard logo" className="w-10 h-10 rounded-xl object-contain" />
+                <Wordmark tone="light" className="text-[1.7rem] sm:text-[2rem]" />
               </button>
 
               <div className={`${menuOpen ? 'flex' : 'hidden'} md:flex absolute md:static top-[76px] left-0 right-0 md:items-center flex-col md:flex-row bg-white md:bg-transparent border-b md:border-0 border-gg-100 rounded-b-[22px] px-4 md:px-0 pb-4 md:pb-0 shadow-xl md:shadow-none`}>
@@ -808,10 +809,8 @@ function SkinQuiz() {
             <div className="grid gap-10 md:grid-cols-[1.15fr_.85fr_1fr] items-start">
               <div className="text-center md:text-left">
                 <div className="inline-flex items-center justify-center md:justify-start gap-2.5">
-                  <span className="w-10 h-10 grid place-items-center rounded-xl bg-gg-800/80 text-gg-200 ring-1 ring-white/10">
-                    ✦
-                  </span>
-                  <p className="font-serif italic font-semibold text-2xl tracking-tight">GlowGuard</p>
+                  <img src="/Icon1.png" alt="GlowGuard logo" className="w-10 h-10 rounded-xl ring-white/10 object-contain" />
+                  <Wordmark tone="dark" className="text-[1.9rem]" />
                 </div>
                 <p className="text-gg-300 text-sm mt-3 max-w-xs mx-auto md:mx-0 leading-6">
                   Skincare. Safe. Simple.
