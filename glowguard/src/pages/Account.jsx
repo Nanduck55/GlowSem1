@@ -54,8 +54,7 @@ const LogoutIcon = () => (
 // small building blocks
 // ------------------------------------------------------------------
 
-const pillBase =
-  'inline-flex items-center justify-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold text-white transition active:scale-[.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-gg-500 focus-visible:ring-offset-2'
+const pillBase = 'btn'
 
 function Field({ label, htmlFor, children }) {
   return (
@@ -142,26 +141,26 @@ export default function Account() {
           <div className="flex flex-wrap items-center gap-3">
             {editing ? (
               <>
-                <button type="submit" disabled={saving} className={`${pillBase} bg-[#3f6f52] hover:bg-[#345c44] disabled:opacity-60`}>
+                <button type="submit" disabled={saving} className={`btn-primary ${saving ? 'opacity-60' : ''}`}>
                   <CheckIcon />
                   {saving ? 'Saving…' : 'Save'}
                 </button>
                 <button
                   type="button"
                   onClick={() => setEditing(false)}
-                  className={`${pillBase} !text-[#3f6f52] border border-[#3f6f52] bg-transparent hover:bg-white/60`}
+                  className="btn-outline"
                 >
                   Cancel
                 </button>
               </>
             ) : (
-              <button type="button" onClick={startEdit} className={`${pillBase} bg-[#3f6f52] hover:bg-[#345c44]`}>
+              <button type="button" onClick={startEdit} className="btn-primary">
                 <EditIcon />
                 Edit Profile
               </button>
             )}
 
-            <button type="button" onClick={logout} className={`${pillBase} bg-[#f26b6b] hover:bg-[#e25757]`}>
+            <button type="button" onClick={logout} className="btn-danger">
               <LogoutIcon />
               Log Out
             </button>
@@ -205,7 +204,7 @@ export default function Account() {
               <button
                 type="button"
                 onClick={retakeQuiz}
-                className={`${pillBase} !px-3 !py-1 !text-[11px] bg-[#3f6f52] hover:bg-[#345c44]`}
+                className="btn-primary !px-3 !py-1 !text-[11px]"
               >
                 {skinType ? 'Retake Skin Profile Quiz' : 'Take Skin Profile Quiz'}
               </button>
@@ -217,7 +216,7 @@ export default function Account() {
               <button
                 type="button"
                 onClick={() => navigate('/recommendations')}
-                className="mt-2 text-sm font-semibold text-[#3f6f52] underline underline-offset-2 hover:text-[#345c44]"
+                className="btn-outline mt-2 !px-3 !py-1.5 !text-xs"
               >
                 See products picked for your skin
               </button>

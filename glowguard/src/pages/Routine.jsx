@@ -443,7 +443,7 @@ export default function Routine() {
   mb-6
 ">
 
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-ink">
+          <h1 className="text-xl sm:text-3xl font-extrabold text-ink">
             {greeting},{' '}
 
             <span className="underline decoration-gg-400 decoration-4 underline-offset-4">

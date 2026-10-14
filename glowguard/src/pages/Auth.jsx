@@ -437,18 +437,42 @@ export default function Auth() {
        Do NOT log the user in automatically.
     ===================================================== */
     if (mode === 'register') {
+      // The quiz is completed before registration, so carry its result
+      // through the registration form and save it with the new account.
+      let pendingProfile = null
+
+      try {
+        pendingProfile = JSON.parse(
+          localStorage.getItem('pending_skin_profile') || 'null'
+        )
+      } catch {
+        pendingProfile = null
+      }
+
+      const pendingSkinType =
+        pendingProfile?.skinType ||
+        localStorage.getItem('pending_skin_type') ||
+        null
+
+      const pendingSkinGoal = pendingProfile?.skinGoal || null
+
       await registerUser({
         name,
         email,
         password,
-        skin_type: localStorage.getItem('pending_skin_type') || null, // Add this line
+        skinType: pendingSkinType,
+        skinGoal: pendingSkinGoal,
       })
+
+      // The account now owns the quiz result, so it is safe to clear the
+      // temporary browser-only quiz data.
+      localStorage.removeItem('pending_skin_profile')
+      localStorage.removeItem('pending_skin_type')
 
       // Remembers that this email just registered, so their very next
       // login (the first one, since register doesn't auto sign in) is
       // routed to the /welcome onboarding page instead of straight to
       // /routine. Cleared as soon as that first login happens below.
-      localStorage.removeItem('pending_skin_type') //ADD THIS
       localStorage.setItem(`gg_new_signup:${email.toLowerCase()}`, '1')
 
       showToast(
@@ -881,14 +905,14 @@ export default function Auth() {
                 <LeafIcon className="mb-0.5 ml-1 inline h-[17px] w-[17px] align-middle text-white/80" />
               </h2>
 
-              <p className="my-3.5 mb-7 max-w-[310px] text-xs leading-[1.7] text-white/85">
+              <p className="my-3.5 mb-7 max-w-[310px] font-bold text-[13px] leading-[1.7] text-white/95">
                 Keep your routines, products, and skincare progress organized in one simple place.
               </p>
 
               <button
                 type="button"
                 onClick={() => switchMode('login')}
-                className="inline-flex min-w-[142px] items-center justify-center gap-2 rounded-[13px] border border-white/70 bg-white/15 px-6 py-3 text-[11px] font-bold tracking-[.8px] text-white backdrop-blur-lg transition hover:-translate-y-0.5 hover:border-white hover:bg-white/25"
+                className="inline-flex min-w-[142px] items-center justify-center gap-2 rounded-[13px] border border-white/70 bg-white/15 px-6 py-3 text-[11px] font-bold tracking-[.8px] text-white backdrop-blur-lg transition hover:-translate-y-0.5 hover:border-white hover:bg-green-900"
               >
                 Sign In
                 <ArrowIcon className="h-3.5 w-3.5" />
@@ -910,7 +934,7 @@ export default function Auth() {
                 <LeafIcon className="mb-0.5 ml-1 inline h-[17px] w-[17px] align-middle text-white/80" />
               </h2>
 
-              <p className="my-3.5 mb-5 max-w-[310px] text-xs leading-[1.7] text-white/85">
+              <p className="my-3.5 mb-5 max-w-[310px] font-bold text-[13px] leading-[1.7] text-white/95">
                 Create your GlowGuard account and make your skincare routine easier to manage.
               </p>
 
@@ -923,9 +947,9 @@ export default function Auth() {
                 ].map((item) => (
                   <li
                     key={item}
-                    className="flex items-center gap-2.5 text-[11px] leading-[1.5] text-white/95"
+                    className="flex items-center gap-2.5 font-bold text-[13px] leading-[1.5] text-white/95"
                   >
-                    <span className="grid h-[23px] w-[23px] flex-none place-items-center rounded-full bg-white/15 text-[9px]">
+                    <span className="grid h-[23px] w-[23px] flex-none place-items-center rounded-full bg-green-800 text-[9px]">
                       ✓
                     </span>
 
@@ -937,13 +961,13 @@ export default function Auth() {
               <button
                 type="button"
                 onClick={() => switchMode('register')}
-                className="inline-flex min-w-[142px] items-center justify-center gap-2 rounded-[13px] border border-white/70 bg-white/15 px-6 py-3 text-[11px] font-bold tracking-[.8px] text-white backdrop-blur-lg transition hover:-translate-y-0.5 hover:border-white hover:bg-white/25"
+                className="inline-flex min-w-[142px] items-center justify-center gap-2 rounded-[13px] border border-white/70 bg-white/15 px-6 py-3 text-[11px] font-bold tracking-[.8px] text-white backdrop-blur-lg transition hover:-translate-y-0.5 hover:border-white hover:bg-green-900"
               >
                 Sign Up
                 <ArrowIcon className="h-3.5 w-3.5" />
               </button>
 
-              <div className="mt-[18px] text-[10px] text-white/75">
+              {/* <div className="mt-[18px] text-[15px] text-white/100">
                 Already have an account?
 
                 <button
@@ -953,7 +977,7 @@ export default function Auth() {
                 >
                   Sign in
                 </button>
-              </div>
+              </div> */}
             </div>
 
           </div>

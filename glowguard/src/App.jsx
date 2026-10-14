@@ -94,6 +94,28 @@ function ConsultantOnly({ children }) {
 
 
 // ======================================================
+// HOME ROUTE ("/")
+// Logged-in users land on Recommendations instead of the marketing
+// Landing page. Logged-out visitors still see Landing, and the
+// "Take / Retake Skin Profile Quiz" buttons (which navigate to '/' with
+// state.scrollTo) still reach the quiz that lives on Landing.
+// ======================================================
+
+function showsLanding(user, location) {
+  return !user || Boolean(location.state?.scrollTo)
+}
+
+function HomeRoute() {
+  const { user, checkingSession } = useApp()
+  const location = useLocation()
+
+  if (checkingSession) return null
+
+  return showsLanding(user, location) ? <Landing /> : <Recommendations />
+}
+
+
+// ======================================================
 // APP LAYOUT
 // ======================================================
 
@@ -101,7 +123,7 @@ function AppLayout() {
   const location = useLocation()
   const { darkMode, user } = useApp()
 
-  const isLanding = location.pathname === '/'
+  const isLanding = location.pathname === '/' && showsLanding(user, location)
   const isAuth = location.pathname === '/auth' || location.pathname === '/reset-password'
   const isWelcome = location.pathname === '/welcome'
   const isAdminArea = location.pathname.startsWith('/admin')
@@ -114,14 +136,13 @@ function AppLayout() {
   // into the logged-out experience.
   const showNavbar = !isAuth && !isAdminArea && !isConsultantArea && (!isLanding || Boolean(user))
 
-  // Dark mode never applies to the Landing page, the Login/Register page,
-  // or either sidebar portal.
+  // Dark mode never applies to the Landing page or the Login/Register page.
+  // The admin and Beauty Consultant portals support it — it's toggled from
+  // the profile dropdown (PortalProfileMenu) in their layouts.
   const darkAllowed =
     !isLanding &&
     !isAuth &&
-    !isWelcome &&
-    !isAdminArea &&
-    !isConsultantArea
+    !isWelcome
 
   useLayoutEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode && darkAllowed)
@@ -134,16 +155,16 @@ function AppLayout() {
       <main
         className={
           showNavbar
-            ? 'min-h-[calc(100vh-64px)]'
+            ? 'min-h-[calc(100vh-64px)] pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-0'
             : ''
         }
       >
         <Routes>
 
-          {/* Landing Page */}
+          {/* Home: Recommendations when logged in, Landing when logged out */}
           <Route
             path="/"
-            element={<Landing />}
+            element={<HomeRoute />}
           />
 
           {/* Login / Register */}

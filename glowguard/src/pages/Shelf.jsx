@@ -117,7 +117,7 @@ export default function Shelf() {
               ))}
             </select>
 
-            <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gg-700">
+            <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-green-500">
               <svg
                 viewBox="0 0 24 24"
                 fill="currentColor"
@@ -133,7 +133,7 @@ export default function Shelf() {
           <button
             type="button"
             onClick={() => setShowForm(true)}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-[12px] bg-[#427856] px-5 text-sm font-bold text-white shadow-[0_8px_18px_rgba(45,90,61,.18)] transition hover:-translate-y-0.5 hover:bg-[#376b4b] active:translate-y-0 md:w-auto md:min-w-[190px]"
+            className="btn-primary h-12 w-full md:w-auto md:min-w-[190px]"
           >
             <span className="text-[28px] font-light leading-none">
               +

@@ -128,3 +128,173 @@ html.dark .hover\:bg-gg-50:hover {
 html.dark .rec-heading {
   color: #cfe3d6 !important;
 }
+
+/* ------------------------------------------------------------------ */
+/*  ADMIN PORTAL DARK MODE                                             */
+/*  The admin pages use hard-coded light colours (see pages/admin/     */
+/*  adminUi.jsx), so they're re-mapped here, scoped to `.gg-admin`.    */
+/*  The profile dropdown reuses the shared rules above.                */
+/* ------------------------------------------------------------------ */
+html.dark .gg-admin {
+  color: #e7ede9;
+  color-scheme: dark; /* dark native <select> popups + scrollbars */
+}
+
+/* page background (more specific than the shared `.bg-white` rule) */
+html.dark .gg-admin.bg-white {
+  background-color: #12181a !important;
+}
+
+html.dark .gg-admin .text-black {
+  color: #e7ede9 !important;
+}
+
+/* sidebar + phone header */
+html.dark .gg-admin .bg-\[\#17502f\] {
+  background-color: #0d2a1b !important;
+}
+
+/* stat cards / user rows / detail panels */
+html.dark .gg-admin .bg-\[\#e1eadb\] {
+  background-color: #1b2320 !important;
+  outline: 1px solid #2a352f;
+  outline-offset: -1px;
+}
+
+/* inputs + selects (darker than the cards they sit on) */
+html.dark .gg-admin input,
+html.dark .gg-admin select,
+html.dark .gg-admin textarea {
+  background-color: #12181a !important;
+  border-color: #3a4a41 !important;
+  color: #e7ede9 !important;
+}
+html.dark .gg-admin input::placeholder {
+  color: #7d8a83;
+}
+
+/* outline button */
+html.dark .gg-admin .border-\[\#1f2a24\] {
+  border-color: #3a4a41 !important;
+}
+html.dark .gg-admin .hover\:bg-\[\#f1f5ee\]:hover {
+  background-color: #26332c !important;
+}
+
+/* status badges */
+html.dark .gg-admin .bg-\[\#dcf5e3\] {
+  background-color: rgba(74, 222, 128, 0.16) !important;
+  color: #6fdc97 !important;
+}
+html.dark .gg-admin .bg-\[\#fbd5d9\] {
+  background-color: rgba(248, 113, 113, 0.16) !important;
+  color: #ff9aa8 !important;
+}
+
+/* error text + dropdown "Log out" */
+html.dark .gg-admin .text-red-600 {
+  color: #ff8a8a !important;
+}
+html.dark .gg-admin .hover\:bg-red-50:hover {
+  background-color: rgba(248, 113, 113, 0.14) !important;
+}
+
+/* secondary line in phone user cards (md+ inherits the normal colour) */
+@media (max-width: 767px) {
+  html.dark .gg-admin .text-\[\#3d4a42\] {
+    color: #9ba8a1 !important;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  BEAUTY CONSULTANT PORTAL DARK MODE                                 */
+/*  Same idea as the admin block above, in a plum-tinted palette to    */
+/*  match the portal's rose/plum accent. Scoped to `.gg-consultant`.   */
+/* ------------------------------------------------------------------ */
+html.dark .gg-consultant {
+  color: #f1e8ee;
+  color-scheme: dark;
+}
+
+/* page background */
+html.dark .gg-consultant.bg-white {
+  background-color: #161216 !important;
+}
+
+/* every other white surface in the portal: top bar, dropdown, cards */
+html.dark .gg-consultant .bg-white {
+  background-color: #231a21 !important;
+}
+
+html.dark .gg-consultant .text-black,
+html.dark .gg-consultant .text-ink {
+  color: #f1e8ee !important;
+}
+
+/* sidebar + phone header */
+html.dark .gg-consultant .bg-\[\#5c1a45\] {
+  background-color: #2e0d23 !important;
+}
+
+/* big panels (rules list, forms, details) and the curation category bands */
+html.dark .gg-consultant .bg-\[\#eab5d7\],
+html.dark .gg-consultant .bg-\[\#e8cddf\] {
+  background-color: #231a21 !important;
+  outline: 1px solid #3b2a36;
+  outline-offset: -1px;
+}
+
+/* recommendation cards sit on the bands, so they need to be lighter */
+html.dark .gg-consultant article.bg-white {
+  background-color: #302230 !important;
+}
+
+/* star-ingredient chip */
+html.dark .gg-consultant .bg-\[\#dc9bc8\] {
+  background-color: rgba(220, 155, 200, 0.2) !important;
+  color: #f2c9e4 !important;
+}
+
+/* curation category headings (dark green serif in light mode) */
+html.dark .gg-consultant .text-\[\#1f4d36\] {
+  color: #cfe3d6 !important;
+}
+
+/* secondary text */
+html.dark .gg-consultant .text-\[\#3d3d3d\] { color: #cbbfc7 !important; }
+html.dark .gg-consultant .text-\[\#59464f\] { color: #b7a7b1 !important; }
+html.dark .gg-consultant .text-\[\#3d4a42\] { color: #b7a7b1 !important; }
+html.dark .gg-consultant .text-\[\#59645d\] { color: #b7a7b1 !important; }
+html.dark .gg-consultant .text-muted        { color: #b7a7b1 !important; }
+
+/* inputs, selects, textareas (darker than the panels they sit on) */
+html.dark .gg-consultant input,
+html.dark .gg-consultant select,
+html.dark .gg-consultant textarea {
+  background-color: #161216 !important;
+  border-color: #4a3744 !important;
+  color: #f1e8ee !important;
+}
+html.dark .gg-consultant input::placeholder,
+html.dark .gg-consultant textarea::placeholder {
+  color: #8f8089;
+}
+
+/* borders + hover fills (outline button, dropdown rows, avatar pill) */
+html.dark .gg-consultant .border-\[\#1f2a24\] {
+  border-color: #4a3744 !important;
+}
+html.dark .gg-consultant .border-gg-100 {
+  border-color: #3b2a36 !important;
+}
+html.dark .gg-consultant .hover\:bg-\[\#f7e6f0\]:hover {
+  background-color: #3a2636 !important;
+}
+
+/* error text + dropdown "Log out" */
+html.dark .gg-consultant .text-red-600 {
+  color: #ff8a8a !important;
+}
+html.dark .gg-consultant .hover\:bg-red-50:hover {
+  background-color: rgba(248, 113, 113, 0.14) !important;
+}

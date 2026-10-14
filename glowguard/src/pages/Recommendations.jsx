@@ -49,9 +49,7 @@ const WHEN_OPTIONS = [
   { value: 'Both', label: 'Both' },
 ]
 
-const greenBtn =
-  'inline-flex items-center justify-center rounded-lg bg-[#41694b] px-5 py-1.5 text-sm font-semibold text-white ' +
-  'shadow-[0_3px_6px_rgba(0,0,0,.28)] transition hover:bg-[#345a3e] disabled:opacity-50 disabled:cursor-not-allowed'
+const greenBtn = 'btn-primary'
 
 /* Soft botanical artwork for the skin-type card (purely decorative). */
 function SkinArt() {
@@ -231,11 +229,7 @@ function AddToRoutineModal({ rec, onClose }) {
               role="radio"
               aria-checked={when === o.value}
               onClick={() => setWhen(o.value)}
-              className={`rounded-lg border px-4 py-1.5 text-base transition ${
-                when === o.value
-                  ? 'border-[#41694b] bg-[#41694b] text-white'
-                  : 'border-[#1c2b22] bg-transparent text-[#1c2b22] hover:bg-white/60'
-              }`}
+              className={when === o.value ? 'btn-primary' : 'btn-outline'}
             >
               {o.label}
             </button>
@@ -261,7 +255,7 @@ function AddToRoutineModal({ rec, onClose }) {
             type="button"
             onClick={onClose}
             disabled={busy}
-            className="inline-flex items-center justify-center rounded-lg border border-[#1c2b22] bg-[#fbfdf9] px-6 py-1.5 text-sm font-medium text-[#1c2b22] transition hover:bg-[#f1f5ee] disabled:opacity-50"
+            className="btn-outline disabled:opacity-50"
           >
             Cancel
           </button>
@@ -279,6 +273,7 @@ export default function Recommendations() {
   const navigate = useNavigate()
   const { user, recommendations, recsLoaded } = useApp()
   const [picked, setPicked] = useState(null)
+  const [categoryFilter, setCategoryFilter] = useState('All')
 
   const skinType = skinTypeKey(user?.skinType)
   const firstName = user?.name?.trim()?.split(/\s+/)[0] ?? 'Your'
@@ -288,12 +283,13 @@ export default function Recommendations() {
     const mine = recommendations.filter((r) => r.visible !== false && r.skinType === skinType)
     const order = [...CATEGORIES, ...new Set(mine.map((r) => r.category).filter((c) => !CATEGORIES.includes(c)))]
     return order
+      .filter((category) => categoryFilter === 'All' || category === categoryFilter)
       .map((category) => ({ category, items: mine.filter((r) => r.category === category) }))
       .filter((s) => s.items.length > 0)
-  }, [recommendations, skinType])
+  }, [recommendations, skinType, categoryFilter])
 
   return (
-    <div className="page">
+    <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-8">
       {/* ---------- header ---------- */}
       <div className="grid gap-6 lg:grid-cols-[1fr_minmax(0,460px)] lg:items-center">
         <div>
@@ -339,30 +335,66 @@ export default function Recommendations() {
       </div>
 
       {/* ---------- recommendation sections ---------- */}
-      <div className="mt-10 space-y-8">
-        {skinType && !recsLoaded && <p className="py-10 text-center text-sm text-muted">Loading recommendations…</p>}
-
-        {sections.map(({ category, items }, index) => (
-          <section key={category} className="card px-4 py-6 sm:px-7">
-            <h2 className="rec-heading font-serif text-3xl font-bold text-gg-900 sm:text-4xl">
-              {index + 1}. {category}
-            </h2>
-            <p className="mt-1 text-base text-ink sm:ml-8">{SECTION_HINTS[category] ?? ''}</p>
-
-            <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 sm:px-2">
-              {items.map((rec) => (
-                <RecommendationCard key={rec.id} rec={rec} onAdd={setPicked} />
-              ))}
-            </div>
-          </section>
-        ))}
-
-        {skinType && recsLoaded && sections.length === 0 && (
-          <div className="card px-6 py-10 text-center">
-            <p className="text-lg font-semibold text-ink">No recommendations for {skinType} Skin yet</p>
-            <p className="mt-1 text-sm text-muted">The GlowCouncil is still curating products for your skin type — check back soon.</p>
+      <div className="mt-10">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-ink">Browse by Category</h2>
+            <p className="mt-1 text-sm text-muted">Filter recommendations by product category.</p>
           </div>
-        )}
+          <div className="relative w-full sm:w-56">
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              aria-label="Filter recommendations by category"
+              className="box-border h-12 w-full appearance-none rounded-[10px] border border-gray-100 bg-white px-4 pr-11 text-sm font-semibold text-ink outline-none transition focus:ring-4 focus:ring-gg-500/10"
+            >
+              <option value="All">Categories</option>
+
+              {CATEGORIES.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+
+            <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-green-500">
+              <svg
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="h-5 w-5"
+                aria-hidden="true"
+              >
+                <path d="M6.7 8.5h10.6c1.4 0 2.2 1.5 1.5 2.7l-5.3 9a1.7 1.7 0 0 1-3 0l-5.3-9c-.7-1.2.1-2.7 1.5-2.7Z" />
+              </svg>
+            </span>
+          </div>
+        </div>
+
+        <div className="space-y-8">
+          {skinType && !recsLoaded && <p className="py-10 text-center text-sm text-muted">Loading recommendations…</p>}
+
+          {sections.map(({ category, items }, index) => (
+            <section key={category} className="card px-4 py-6 sm:px-7">
+              <h2 className="rec-heading font-serif text-3xl font-bold text-gg-900 sm:text-4xl">
+                {index + 1}. {category}
+              </h2>
+              <p className="mt-1 text-base text-ink sm:ml-8">{SECTION_HINTS[category] ?? ''}</p>
+
+              <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 sm:px-2">
+                {items.map((rec) => (
+                  <RecommendationCard key={rec.id} rec={rec} onAdd={setPicked} />
+                ))}
+              </div>
+            </section>
+          ))}
+
+          {skinType && recsLoaded && sections.length === 0 && (
+            <div className="card px-6 py-10 text-center">
+              <p className="text-lg font-semibold text-ink">No recommendations for {skinType} Skin yet</p>
+              <p className="mt-1 text-sm text-muted">The GlowCouncil is still curating products for your skin type — check back soon.</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {picked && <AddToRoutineModal rec={picked} onClose={() => setPicked(null)} />}

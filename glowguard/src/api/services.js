@@ -11,12 +11,19 @@ export async function loginUser({ email, password }, remember = true) {
   return data.user
 }
 
-export async function registerUser({ name, email, password, skin_type }) {
+export async function registerUser({
+  name,
+  email,
+  password,
+  skinType = null,
+  skinGoal = null,
+}) {
   const { data } = await api.post('/auth/register.php', {
     name,
     email,
     password,
-    skin_type, //ADD THIS LINE
+    skin_type: skinType,
+    skin_goal: skinGoal,
   })
 
   // Registration does NOT create a browser session.
@@ -24,14 +31,21 @@ export async function registerUser({ name, email, password, skin_type }) {
 }
 
 export async function logoutUser() {
-  try {
-    await api.post('/auth/logout.php')
-  } catch {
-    // Server unreachable or token already invalid — either way the person
-    // is logging out, so don't let the error block clearing the local session.
-  } finally {
-    clearToken()
-  }
+  // Grab the token, then clear the local session straight away so the UI can
+  // leave immediately instead of waiting on the server (on a slow XAMPP/PHP
+  // backend that wait was the visible "delay" after clicking Log Out).
+  const token = getToken()
+  clearToken()
+
+  if (!token) return
+
+  // Tell the server to revoke the token in the background. The token is sent
+  // explicitly because it has just been removed from storage (the request
+  // interceptor in client.js would no longer find it). Errors are ignored:
+  // the person is logged out locally either way.
+  api
+    .post('/auth/logout.php', null, { headers: { Authorization: `Bearer ${token}` } })
+    .catch(() => {})
 }
 
 /**
@@ -255,4 +269,4 @@ export function findClashes(routineItems, products, rules) {
   return alerts
 }
 
-export { CATEGORIES }
+export { CATEGORIES }                                                                  
