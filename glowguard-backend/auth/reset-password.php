@@ -27,6 +27,7 @@ $hash = password_hash($password, PASSWORD_DEFAULT);
 
 $pdo->beginTransaction();
 try {
+    //sets a new password after email verification 
     $pdo->prepare('UPDATE users SET password_hash = :hash WHERE user_id = :id')
         ->execute(['hash' => $hash, 'id' => $reset['user_id']]);
 

@@ -33,6 +33,7 @@ function find_valid_reset(PDO $pdo, string $rawToken): ?array
         return null;
     }
 
+    // The token is stored hashed in the database for security.
     $stmt = $pdo->prepare(
         'SELECT r.reset_id, r.email, u.user_id, u.status
            FROM password_resets r
@@ -47,6 +48,7 @@ function find_valid_reset(PDO $pdo, string $rawToken): ?array
     return $row ?: null;
 }
 
+// Masks an email address for display, e.g. "j***@example.com"
 function mask_email(string $email): string
 {
     $parts = explode('@', $email, 2);

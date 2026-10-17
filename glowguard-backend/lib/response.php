@@ -1,5 +1,6 @@
 <?php
 
+// This file contains helper functions for sending JSON responses and enforcing HTTP methods.   
 function json_out($data, int $status = 200): void
 {
     http_response_code($status);

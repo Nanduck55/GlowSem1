@@ -4,11 +4,13 @@ require_once __DIR__ . '/lib/helpers.php';
 
 $pdo = get_db();
 $user = require_auth($pdo);
-if ($_SERVER['REQUEST_METHOD'] !== 'GET') assert_consultant($user);
+if ($_SERVER['REQUEST_METHOD'] !== 'GET')
+    assert_consultant($user);
 
-const SEVERITY_LEVELS  = ['Potential Conflict', 'Caution', 'Info'];
+const SEVERITY_LEVELS = ['Potential Conflict', 'Caution', 'Info'];
 const DEFAULT_SEVERITY = 'Potential Conflict';
 const SOURCE_MAX_LENGTH = 45;
+
 
 const RULE_SELECT =
     'SELECT r.rule_id, a.ingredient_name AS name_a, b.ingredient_name AS name_b, r.warning_text,
@@ -20,20 +22,22 @@ const RULE_SELECT =
 function normalize_severity(?string $value): string
 {
     foreach (SEVERITY_LEVELS as $level) {
-        if (strcasecmp(trim((string) $value), $level) === 0) return $level;
+        if (strcasecmp(trim((string) $value), $level) === 0)
+            return $level;
     }
     return DEFAULT_SEVERITY;
 }
 
+
 function row_to_rule(array $row): array
 {
     return [
-        'id'       => (int) $row['rule_id'],
-        'a'        => $row['name_a'],
-        'b'        => $row['name_b'],
-        'message'  => $row['warning_text'],
+        'id' => (int) $row['rule_id'],
+        'a' => $row['name_a'],
+        'b' => $row['name_b'],
+        'message' => $row['warning_text'],
         'severity' => normalize_severity($row['severity_level'] ?? null),
-        'source'   => (string) ($row['source_reference'] ?? ''),
+        'source' => (string) ($row['source_reference'] ?? ''),
     ];
 }
 
@@ -52,18 +56,23 @@ function rule_input(PDO $pdo, array $data): array
     if ($a === '' || $b === '' || $message === '') {
         json_error('Fields a, b, and message are all required.');
     }
-    if ($a === $b) json_error('Ingredient A and B must be different.');
+    if ($a === $b)
+        json_error('Ingredient A and B must be different.');
 
     $idA = ingredient_id_by_name($pdo, $a);
     $idB = ingredient_id_by_name($pdo, $b);
-    if ($idA === null) json_error("Unknown ingredient: $a", 422);
-    if ($idB === null) json_error("Unknown ingredient: $b", 422);
+    if ($idA === null)
+        json_error("Unknown ingredient: $a", 422);
+    if ($idB === null)
+        json_error("Unknown ingredient: $b", 422);
+
 
     $severity = null;
     if (array_key_exists('severity', $data) && trim((string) $data['severity']) !== '') {
         $wanted = trim((string) $data['severity']);
         foreach (SEVERITY_LEVELS as $level) {
-            if (strcasecmp($wanted, $level) === 0) $severity = $level;
+            if (strcasecmp($wanted, $level) === 0)
+                $severity = $level;
         }
         if ($severity === null) {
             json_error('Severity level must be one of: ' . implode(', ', SEVERITY_LEVELS) . '.', 422);
@@ -97,12 +106,12 @@ switch ($_SERVER['REQUEST_METHOD']) {
                  (ingredient_id_1, ingredient_id_2, warning_text, severity_level, source_reference)
              VALUES (:a, :b, :message, :severity, :source)'
         )->execute([
-            'a'        => $idA,
-            'b'        => $idB,
-            'message'  => $message,
-            'severity' => $severity ?? DEFAULT_SEVERITY,
-            'source'   => ($source === null || $source === '') ? null : $source,
-        ]);
+                    'a' => $idA,
+                    'b' => $idB,
+                    'message' => $message,
+                    'severity' => $severity ?? DEFAULT_SEVERITY,
+                    'source' => ($source === null || $source === '') ? null : $source,
+                ]);
 
         json_out(fetch_rule($pdo, (int) $pdo->lastInsertId()), 201);
         break;
@@ -111,13 +120,15 @@ switch ($_SERVER['REQUEST_METHOD']) {
     case 'PUT': {
         $data = body();
         $id = (int) ($data['id'] ?? 0);
-        if (!$id) json_error('Clash rule id is required.');
+        if (!$id)
+            json_error('Clash rule id is required.');
 
         [$idA, $idB, $message, $severity, $source] = rule_input($pdo, $data);
 
         $exists = $pdo->prepare('SELECT rule_id FROM ingredient_clash_rules WHERE rule_id = :id');
         $exists->execute(['id' => $id]);
-        if (!$exists->fetch()) json_error('Clash rule not found.', 404);
+        if (!$exists->fetch())
+            json_error('Clash rule not found.', 404);
 
         $pdo->prepare(
             'UPDATE ingredient_clash_rules
@@ -126,14 +137,14 @@ switch ($_SERVER['REQUEST_METHOD']) {
                  source_reference = IF(:set_source = 1, :source, source_reference)
              WHERE rule_id = :id'
         )->execute([
-            'a'          => $idA,
-            'b'          => $idB,
-            'message'    => $message,
-            'severity'   => $severity,
-            'set_source' => $source === null ? 0 : 1,
-            'source'     => ($source === null || $source === '') ? null : $source,
-            'id'         => $id,
-        ]);
+                    'a' => $idA,
+                    'b' => $idB,
+                    'message' => $message,
+                    'severity' => $severity,
+                    'set_source' => $source === null ? 0 : 1,
+                    'source' => ($source === null || $source === '') ? null : $source,
+                    'id' => $id,
+                ]);
 
         json_out(fetch_rule($pdo, $id));
         break;
@@ -141,7 +152,8 @@ switch ($_SERVER['REQUEST_METHOD']) {
 
     case 'DELETE': {
         $id = (int) ($_GET['id'] ?? 0);
-        if (!$id) json_error('Clash rule id is required.');
+        if (!$id)
+            json_error('Clash rule id is required.');
 
         $pdo->prepare('DELETE FROM ingredient_clash_rules WHERE rule_id = :id')->execute(['id' => $id]);
         json_out(['ok' => true]);

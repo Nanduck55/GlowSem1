@@ -7,6 +7,8 @@ try {
     $pdo = get_db();
     $data = body();
     $email = strtolower(trim($data['email'] ?? ''));
+    
+    // validate if the email exists in the db
 
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         json_error('Please enter a valid email address.');
