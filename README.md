@@ -4,8 +4,6 @@
 
 GlowGuard is a full-stack web application designed to help users curate personalized skincare routines, track personal product inventories, and avoid hazardous active ingredient contraindications. Combining a modern **React** user interface with a robust **PHP / MySQL** backend, GlowGuard balances user-centric routine scheduling with enterprise-grade data lifecycle protection and role-based administration.
 
----
-
 ## 🛡️ Tech Stack & Badges
 
 ### Core Technologies
@@ -76,14 +74,18 @@ To manage both verified catalog products and private user items in a single norm
 
 ## 🗄️ Database Schema Overview (`glowguard_db`)
 
-| Table | Purpose | Constraints & Cascade Behavior |
-| :--- | :--- | :--- |
-| **`users`** | Account credentials, profiles, skin types, and roles | Primary Key: `user_id` (`INT AUTO_INCREMENT`) |
-| **`products`** | Master catalog items and custom user items | `user_id` (`INT NULL`, `ON DELETE CASCADE`), `created_by` (`INT NULL`, `ON DELETE SET NULL`) |
-| **`user_products`** | Digital bathroom shelf (Many-to-Many junction) | `user_id` (`ON DELETE CASCADE`), `product_id` (`ON DELETE CASCADE`) |
-| **`routine_products`** | Routine schedules, target days (`M,W,F`), AM/PM flags | `user_id` (`ON DELETE CASCADE`), `product_id` (`ON DELETE CASCADE`) |
-| **`user_clash_logs`** | Logs triggered active ingredient safety alerts | `user_id` (`ON DELETE CASCADE`) |
-
+**users:** Stores core account profiles, login credentials, assigned roles (admin, consultant, user), skin types, and account status.
+**auth_tokens:** Manages active user authentication sessions and token expiration timestamps.
+**password_resets:** Stores temporary security tokens and expiration dates for password recovery requests.
+**products:** Unified product repository containing both verified global catalog items (user_id = NULL) and private custom items (user_id assigned).
+**user_products:** Represents a user's digital bathroom shelf, mapping saved products to individual accounts without duplicating catalog data.
+**product_recommendations:** Stores consultant-curated product suggestions, skin type tags, and targeted notes.
+**routines:** Defines personalized routine containers created by users (e.g., "Morning Refresh", "Nightly Treatment").
+**routine_products:** Links products to specific routines, defining step ordering, application frequency, and targeted time slots (AM/PM).
+**routine_logs:** Logs historical execution records every time a user completes a routine step.
+**active_ingredients:** Master dictionary of skincare chemical compounds (e.g., Retinoids, Vitamin C, Salicylic Acid).
+**product_ingredients:** Junction table mapping products to their constituent active ingredients.
+**ingredient_clash_rules:** Stores contraindication safety rules, conflict severity ratings, and warning notes between incompatible active ingredient pairs.
 ---
 
 ## 🚀 Setup & Installation Guide
@@ -103,25 +105,7 @@ To manage both verified catalog products and private user items in a single norm
 
 ---
 
-### Step 2: Backend API Setup & `.env` Configuration
-
-1. Place or clone the backend source code into your XAMPP `htdocs` directory:
-   ```bash
-   C:\xampp\htdocs\glowguard-api\
-   ```
-2. Create your environment file by copying `.env.example`:
-   ```bash
-   cp .env.example .env
-   ```
-3. Open `.env` and put local directory:
-   ```env
-
-   Example:
-   VITE_API_URL=http://localhost/GlowSem1/glowguard-backend
-
----
-
-### Step 3: Seed Initial Admin & Consultant Accounts
+### Step 2: Seed Initial Admin & Consultant Accounts
 
 Because elevated roles (`admin`, `consultant`) cannot be registered through the public UI without confirmation code, seed the initial administrative accounts using XAMPP's PHP CLI:
 
@@ -137,7 +121,7 @@ C:\xampp\php\php.exe create-consultant.php consultant@gmail.com "Bryan" "glowcon
 
 ---
 
-### Step 4: Frontend Setup & `.env` Configuration
+### Step 3: Frontend Setup & `.env` Configuration
 
 1. Open a terminal and navigate to the frontend application folder:
    ```bash
