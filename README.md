@@ -72,20 +72,20 @@ To manage both verified catalog products and private user items in a single norm
 
 ---
 
-## 🗄️ Database Schema Overview (`glowguard_db`)
+## Database Schema Overview (`glowguard_db`)
 
-**users:** Stores core account profiles, login credentials, assigned roles (admin, consultant, user), skin types, and account status.
-**auth_tokens:** Manages active user authentication sessions and token expiration timestamps.
-**password_resets:** Stores temporary security tokens and expiration dates for password recovery requests.
-**products:** Unified product repository containing both verified global catalog items (user_id = NULL) and private custom items (user_id assigned).
-**user_products:** Represents a user's digital bathroom shelf, mapping saved products to individual accounts without duplicating catalog data.
-**product_recommendations:** Stores consultant-curated product suggestions, skin type tags, and targeted notes.
-**routines:** Defines personalized routine containers created by users (e.g., "Morning Refresh", "Nightly Treatment").
-**routine_products:** Links products to specific routines, defining step ordering, application frequency, and targeted time slots (AM/PM).
-**routine_logs:** Logs historical execution records every time a user completes a routine step.
-**active_ingredients:** Master dictionary of skincare chemical compounds (e.g., Retinoids, Vitamin C, Salicylic Acid).
-**product_ingredients:** Junction table mapping products to their constituent active ingredients.
-**ingredient_clash_rules:** Stores contraindication safety rules, conflict severity ratings, and warning notes between incompatible active ingredient pairs.
+* **`users`**: Stores core account profiles, login credentials, assigned roles (admin, consultant, user), skin types, and account status.
+* **`auth_tokens`**: Manages active user authentication sessions and token expiration timestamps.
+* **`password_resets`**: Stores temporary security tokens and expiration dates for password recovery requests.
+* **`products`**: Unified product repository containing both verified global catalog items (`user_id = NULL`) and private custom items (`user_id` assigned).
+* **`user_products`**: Represents a user's digital bathroom shelf, mapping saved products to individual accounts without duplicating catalog data.
+* **`product_recommendations`**: Stores consultant-curated product suggestions, skin type tags, and targeted notes.
+* **`routines`**: Defines personalized routine containers created by users (e.g., "Morning Refresh", "Nightly Treatment").
+* **`routine_products`**: Links products to specific routines, defining step ordering, application frequency, and targeted time slots (AM/PM).
+* **`routine_logs`**: Logs historical execution records every time a user completes a routine step.
+* **`active_ingredients`**: Master dictionary of skincare chemical compounds (e.g., Retinoids, Vitamin C, Salicylic Acid).
+* **`product_ingredients`**: Junction table mapping products to their constituent active ingredients.
+* **`ingredient_clash_rules`**: Stores contraindication safety rules, conflict severity ratings, and warning notes between incompatible active ingredient pairs.
 ---
 
 ## 🚀 Setup & Installation Guide
