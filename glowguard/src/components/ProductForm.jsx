@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useApp } from '../context/AppContext'
 import { CATEGORIES } from '../api/services'
 import { findDraftClashes, fetchIngredientDescriptions } from '../api/services'
+import SchedulePicker, { weekdayIndex } from './SchedulePicker'
 
 // Local-time date key (YYYY-MM-DD) — same rule as Routine.jsx.
 const todayKey = () => {
@@ -154,7 +155,7 @@ function ActivesDropdown({ options, selected, onToggle, onInfo, infoFor }) {
  * Add / Edit product form — matches the "Edit Product" modal in your screenshots.
  * `onSaved(product)` is called after the product is stored via the PHP API.
  */
-export default function ProductForm({ product, onSaved, onCancel, routineItems }) {
+export default function ProductForm({ product, onSaved, onCancel, routineItems, showSchedule, viewedDate }) {
   const { ingredients, rules, products, loadRoutine } = useApp()
 
   // The routine to check clashes against. Pages that already have it loaded
@@ -204,6 +205,14 @@ export default function ProductForm({ product, onSaved, onCancel, routineItems }
     }))
   }
 
+  // Which days (and for how long) the product is added to the routine.
+  // Starts as "just the day being viewed", which is what Add to Routine did before.
+  const viewedWeekday = weekdayIndex(viewedDate || todayKey())
+  const [days, setDays] = useState(() =>
+    Array.from({ length: 7 }, (_, i) => i === viewedWeekday)
+  )
+  const [span, setSpan] = useState(0)
+
   // Live preview of safety rules this selection would trigger — both within
   // the selected actives and against products already in the same routine.
   // A placeholder id is enough for a new product; for an existing one the id
@@ -214,6 +223,11 @@ export default function ProductForm({ product, onSaved, onCancel, routineItems }
   const submit = (e) => {
     e.preventDefault()
     if (!form.name.trim()) return
+    if (showSchedule) {
+      if (!days.some(Boolean)) return
+      onSaved({ ...form, name: form.name.trim() }, { days, span })
+      return
+    }
     onSaved({ ...form, name: form.name.trim() })
   }
 
@@ -297,9 +311,25 @@ export default function ProductForm({ product, onSaved, onCancel, routineItems }
         </div>
       )}
 
+      {showSchedule && (
+        <SchedulePicker
+          days={days}
+          setDays={setDays}
+          span={span}
+          setSpan={setSpan}
+          viewedWeekday={viewedWeekday}
+        />
+      )}
+
       <div className="flex justify-end gap-3 pt-2">
         <button type="button" className="btn-outline" onClick={onCancel}>Cancel</button>
-        <button type="submit" className="btn-primary">{product ? 'Save Changes' : 'Add to Routine'}</button>
+        <button
+          type="submit"
+          className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={showSchedule && !days.some(Boolean)}
+        >
+          {product ? 'Save Changes' : 'Add to Routine'}
+        </button>
       </div>
     </form>
   )

@@ -25,6 +25,28 @@ function find_routine_product(PDO $pdo, int $userId, string $date, int $productI
 }
 
 /**
+ * Puts a product in one day's routine (does nothing if it is already there).
+ * Used by the "several days at once" POST below.
+ */
+function add_product_to_day(PDO $pdo, int $userId, string $date, int $productId): void
+{
+    $rid = find_or_create_routine($pdo, $userId, $date, DAILY_TYPE);
+
+    if (find_routine_product($pdo, $userId, $date, $productId) === null) {
+        $next = $pdo->prepare(
+            'SELECT COALESCE(MAX(step_order), 0) + 1 FROM routine_products WHERE routine_id = :rid'
+        );
+        $next->execute(['rid' => $rid]);
+        $step = (int) $next->fetchColumn();
+
+        $pdo->prepare(
+            'INSERT INTO routine_products (routine_id, product_id, step_order)
+             VALUES (:rid, :pid, :step)'
+        )->execute(['rid' => $rid, 'pid' => $productId, 'step' => $step]);
+    }
+}
+
+/**
  * Saves a new card order for one day's routine.
  * $order = product ids in the order they should now appear. Products that
  * are not in $order (e.g. ones hidden because they belong to the other
@@ -84,6 +106,69 @@ switch ($_SERVER['REQUEST_METHOD']) {
 
     case 'POST':
         $data = body();
+
+        // Several days at once: { dates: ['YYYY-MM-DD', ...], productId }
+        // (the day picker in Add Product). Single-date requests below are unchanged.
+        if (isset($data['dates']) && is_array($data['dates'])) {
+            $productId = (int) ($data['productId'] ?? 0);
+            $dates = array_values(array_unique(array_filter(
+                $data['dates'],
+                fn($d) => is_string($d) && valid_date($d)
+            )));
+            if (!$productId || !$dates || count($dates) > 120) {
+                json_error('A productId and between 1 and 120 valid dates (YYYY-MM-DD) are required.', 400);
+            }
+
+            $own = $pdo->prepare('SELECT product_id FROM user_products WHERE product_id = :id AND user_id = :uid');
+            $own->execute(['id' => $productId, 'uid' => $userId]);
+            if (!$own->fetch()) json_error('Product not found.', 404);
+
+            // From the "From my shelf" tab the request also carries { period: 'AM'|'PM' }.
+            // Each day then follows the same rules as adding one day from the shelf:
+            // bring back a period that was removed, and keep a "Both" product to
+            // the period being viewed. Without a period, days are simply added.
+            $period = $data['period'] ?? null;
+            if ($period !== null && !in_array($period, PERIODS, true)) {
+                json_error("Period must be 'AM' or 'PM'.", 422);
+            }
+            $isBoth = true;
+            if ($period !== null) {
+                $prod = load_products($pdo, $userId, $productId);
+                $isBoth = !$prod || $prod[0]['timeOfDay'] === 'Both';
+            }
+
+            // All-or-nothing, so a failure never leaves only some days added.
+            $pdo->beginTransaction();
+            try {
+                foreach ($dates as $d) {
+                    if ($period === null) {
+                        add_product_to_day($pdo, $userId, $d, $productId);
+                        continue;
+                    }
+
+                    if (find_routine_product($pdo, $userId, $d, $productId) !== null) {
+                        $removed = removed_periods($pdo, $userId, $d);
+                        if (isset($removed[$productId][$period])) {
+                            set_period_removed($pdo, $userId, $d, $productId, $period, false);
+                        }
+                        continue;
+                    }
+
+                    add_product_to_day($pdo, $userId, $d, $productId);
+                    if ($isBoth) {
+                        set_period_removed($pdo, $userId, $d, $productId, $period === 'AM' ? 'PM' : 'AM', true);
+                    }
+                }
+                $pdo->commit();
+            } catch (Throwable $e) {
+                $pdo->rollBack();
+                throw $e;
+            }
+
+            json_out(routine_items($pdo, $userId, $dates[0]), 201);
+            break;
+        }
+
         $date = $data['date'] ?? null;
         $productId = (int) ($data['productId'] ?? 0);
         if (!valid_date($date) || !$productId) {

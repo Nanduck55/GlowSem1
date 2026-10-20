@@ -24,11 +24,13 @@ import AdminLayout from './pages/admin/AdminLayout'
 import UsersList from './pages/admin/UsersList'
 import UserDetails from './pages/admin/UserDetails'
 import RequestsList from './pages/admin/RequestsList'
+import AdminStats from './pages/admin/StatsPage'
 import ConsultantLayout from './pages/consultant/ConsultantLayout'
 import RulesList from './pages/consultant/RulesList'
 import RuleDetails from './pages/consultant/RuleDetails'
 import RuleForm from './pages/consultant/RuleForm'
 import CurationList from './pages/consultant/CurationList'
+import ConsultantStats from './pages/consultant/StatsPage'
 import CurationView from './pages/consultant/CurationView'
 import CurationForm from './pages/consultant/CurationForm'
 
@@ -251,6 +253,7 @@ function AppLayout() {
             <Route path="users" element={<UsersList />} />
             <Route path="users/:id" element={<UserDetails />} />
             <Route path="requests" element={<RequestsList />} />
+            <Route path="stats" element={<AdminStats />} />
           </Route>
 
           {/* Beauty Consultant area (its own sidebar layout + nested pages) */}
@@ -268,6 +271,7 @@ function AppLayout() {
             <Route path="rules/:id" element={<RuleDetails />} />
             <Route path="rules/:id/edit" element={<RuleForm mode="edit" />} />
             <Route path="curation" element={<CurationList />} />
+            <Route path="stats" element={<ConsultantStats />} />
             <Route path="curation/new" element={<CurationForm mode="create" />} />
             <Route path="curation/:id" element={<CurationView />} />
             <Route path="curation/:id/edit" element={<CurationForm mode="edit" />} />

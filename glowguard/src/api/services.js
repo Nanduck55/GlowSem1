@@ -126,6 +126,13 @@ export async function addToRoutine(date, productId) {
   return (await api.post('/routines.php', { date, productId })).data
 }
 
+// Adds one product to several days at once (the day picker in Add Product).
+// `period` ('AM' | 'PM') is sent from the shelf tab so each day follows the
+// same AM/PM rules as adding a single day from the shelf.
+export async function addToRoutineDates(dates, productId, period) {
+  return (await api.post('/routines.php', { dates, productId, ...(period ? { period } : {}) })).data
+}
+
 export async function updateRoutineItem(date, productId, patch) {
   return (await api.put('/routines.php', { date, productId, ...patch })).data
 }
@@ -269,6 +276,16 @@ export async function setUserActive(id, active) {
 /* Staff sign-up requests (consultant / admin) — admin/requests.php.   */
 /*  GET ?                  -> pending + rejected requests              */
 /*  PUT {id, action}       -> 'approve' | 'reject', returns the user   */
+// Admin Statistics page (admins only; totals, never one person's routine).
+export async function fetchAdminStats(days = 30) {
+  return (await api.get('/admin/stats.php', { params: { days } })).data
+}
+
+// Beauty Consultant Statistics page (consultants only).
+export async function fetchConsultantStats() {
+  return (await api.get('/consultant-stats.php')).data
+}
+
 export async function fetchRequests() {
   const { data } = await api.get('/admin/requests.php')
   return (Array.isArray(data) ? data : data.requests ?? []).map(normalizeUser)

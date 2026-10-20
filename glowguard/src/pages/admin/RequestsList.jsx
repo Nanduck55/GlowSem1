@@ -4,6 +4,9 @@ import { useApp } from '../../context/AppContext'
 import {
   PageTitle,
   Loading,
+  SummaryCard,
+  InboxIcon,
+  XCircleIcon,
   cardCls,
   inputCls,
   btnGreen,
@@ -11,16 +14,6 @@ import {
   formatDate,
   roleLabel,
 } from './adminUi'
-
-// Same stat card as User Management, so both pages match in size.
-function StatCard({ label, value }) {
-  return (
-    <div className={`${cardCls} px-3 sm:px-5 py-3 sm:py-4`}>
-      <p className="text-xs sm:text-lg lg:text-xl font-semibold leading-tight">{label}</p>
-      <p className="mt-1 sm:mt-2 text-center text-3xl sm:text-5xl font-semibold">{value}</p>
-    </div>
-  )
-}
 
 // Sign-up requests from people who chose "Consultant" or "Admin" on the
 // sign-up page. They are not listed in User Management until approved here.
@@ -86,8 +79,8 @@ export default function RequestsList() {
       <PageTitle sub="Review consultant and admin sign-up requests.">Requests</PageTitle>
 
       <div className="grid grid-cols-3 gap-2 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
-        <StatCard label="Pending Requests" value={pendingCount} />
-        <StatCard label="Rejected Requests" value={rejectedCount} />
+        <SummaryCard icon={InboxIcon} label="Pending Requests" value={pendingCount} />
+        <SummaryCard icon={XCircleIcon} label="Rejected Requests" value={rejectedCount} />
       </div>
 
       <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3 mb-5 sm:mb-6">

@@ -26,11 +26,7 @@ const CloseIcon = () => (
 )
 
 const LogoLeafIcon = () => (
-  <svg viewBox="0 0 52 52" fill="none" className="h-8 w-8 shrink-0" aria-hidden="true">
-    <path d="M7 27.5C7 16.8 16.5 8.4 33.5 6.5 31.6 23.5 23.2 33 12.5 33 10.4 33 8.5 31 7 27.5Z" fill="currentColor" fillOpacity=".95" />
-    <path d="M16 41c2.5-11 9.5-20.5 23-29.5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-    <path d="M19.5 33C22 26.2 27.1 21.1 35.3 17.5" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" opacity=".9" />
-  </svg>
+  <img src="/Icon1.png" alt="GlowGuard" className="h-8 w-8 shrink-0 object-contain" />
 )
 
 const RulesIcon = () => (
@@ -52,9 +48,16 @@ const ChevronRight = () => (
   </svg>
 )
 
+const StatsIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 shrink-0" aria-hidden="true">
+    <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
+  </svg>
+)
+
 const navItems = [
   { to: '/consultant/rules', label: 'Safety Clash Rules', Icon: RulesIcon },
   { to: '/consultant/curation', label: 'Curation', Icon: CurationIcon },
+  { to: '/consultant/stats', label: 'Statistics', Icon: StatsIcon },
 ]
 
 // Beauty Consultant portal — its own login, its own role, and (unlike the

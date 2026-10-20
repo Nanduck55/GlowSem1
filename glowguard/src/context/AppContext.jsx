@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import {
-  fetchProducts, saveProduct, deleteProduct, fetchRoutine, addToRoutine,
+  fetchProducts, saveProduct, deleteProduct, fetchRoutine, addToRoutine, addToRoutineDates,
   updateRoutineItem, removeFromRoutine, setRoutinePeriodRemoved, fetchTracker, restoreSession,
   fetchAdminData, addIngredient, deleteIngredient, addClashRule, updateClashRule, deleteClashRule,
   fetchRecommendations, addRecommendation, updateRecommendation, deleteRecommendation,
@@ -141,6 +141,10 @@ export function AppProvider({ children }) {
     await addToRoutine(date, productId)
     notify('Added to routine.')
   }
+  const addToRoutineDatesAction = async (dates, productId, period) => {
+    await addToRoutineDates(dates, productId, period)
+    notify(`Added to routine for ${dates.length} days.`)
+  }
   const toggleComplete = async (date, productId, completed, timeOfDay) => {
     await updateRoutineItem(date, productId, { completed, timeOfDay })
     // Keep each product's usage count (Routine Insights) current.
@@ -176,7 +180,7 @@ export function AppProvider({ children }) {
       products, rules, ingredients, dataLoaded,
       darkMode, toggleDarkMode,
       saveProduct: saveProductAction, deleteProduct: deleteProductAction,
-      loadRoutine, addToRoutine: addToRoutineAction,
+      loadRoutine, addToRoutine: addToRoutineAction, addToRoutineDates: addToRoutineDatesAction,
       toggleComplete, removeFromRoutine: removeFromRoutineAction, setPeriodRemoved,
       loadTracker,
       addIngredient: addIngredientAction, deleteIngredient: deleteIngredientAction,

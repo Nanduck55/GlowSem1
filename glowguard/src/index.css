@@ -249,6 +249,7 @@ html.dark .gg-consultant .bg-\[\#5c1a45\] {
 
 /* big panels (rules list, forms, details) and the curation category bands */
 html.dark .gg-consultant .bg-\[\#eab5d7\],
+html.dark .gg-consultant .bg-\[\#f8dcec\],
 html.dark .gg-consultant .bg-\[\#e8cddf\] {
   background-color: #231a21 !important;
   outline: 1px solid #3b2a36;

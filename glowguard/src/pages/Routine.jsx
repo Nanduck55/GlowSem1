@@ -5,6 +5,7 @@ import { findClashes, skinTypeKey, reorderRoutine } from '../api/services'
 import { usePeriod } from '../api/usePeriod'
 import Modal from '../components/Modal'
 import ProductForm from '../components/ProductForm'
+import SchedulePicker, { weekdayIndex, summarizeSchedule } from '../components/SchedulePicker'
 
 const DAY_MS = 86400000
 
@@ -32,6 +33,20 @@ function startOfWeek(d) {
   const day = (x.getDay() + 6) % 7 // Monday = 0
   x.setDate(x.getDate() - day)
   return x
+}
+
+// The dates a new product is added to from the Add Product day picker:
+// starting at the day being viewed, for `span` days, only on the weekdays
+// that were picked (days[0] = Monday ... days[6] = Sunday).
+function scheduleDates(startKey, days, span) {
+  const [y, m, d] = startKey.split('-').map(Number)
+  const out = []
+  const total = span || 7 // period not set: just the coming week
+  for (let i = 0; i < total; i++) {
+    const day = new Date(y, m - 1, d + i)
+    if (days[(day.getDay() + 6) % 7]) out.push(fmt(day))
+  }
+  return out
 }
 
 // ---- drag-to-reorder helpers -------------------------------------------
@@ -75,6 +90,7 @@ export default function Routine() {
     rules,
     loadRoutine,
     addToRoutine,
+    addToRoutineDates,
     toggleComplete,
     removeFromRoutine,
     setPeriodRemoved,
@@ -92,6 +108,12 @@ export default function Routine() {
   const [showForm, setShowForm] = useState(false)
   const [editProduct, setEditProduct] = useState(null)
   const [addPicker, setAddPicker] = useState(false)
+
+  // "From my shelf" day picker. shelfDays = null means "just the day being
+  // viewed" (the old one-tap behaviour); picking days switches it to a list.
+  const [shelfDays, setShelfDays] = useState(null)
+  const [shelfSpan, setShelfSpan] = useState(0)
+  const [shelfPickerOpen, setShelfPickerOpen] = useState(false)
   const [menuFor, setMenuFor] = useState(null)
   const [menuStyle, setMenuStyle] = useState({ top: 0, left: 0 })
 
@@ -107,6 +129,17 @@ export default function Routine() {
   // --------------------------------------------------
 
   const dateKey = fmt(selected)
+
+  const viewedWeekday = weekdayIndex(dateKey)
+  const shelfDaysShown =
+    shelfDays ?? Array.from({ length: 7 }, (_, i) => i === viewedWeekday)
+
+  // Start from "just this day" every time the Add a Product window opens.
+  useEffect(() => {
+    setShelfDays(null)
+    setShelfSpan(0)
+    setShelfPickerOpen(false)
+  }, [showForm])
 
   const week = useMemo(() => {
     const s = startOfWeek(selected)
@@ -289,13 +322,22 @@ export default function Routine() {
   // ADD NEW PRODUCT
   // --------------------------------------------------
 
-  const addProductFlow = async (p) => {
+  const addProductFlow = async (p, schedule) => {
     try {
       const saved = await saveProduct(p)
 
       // The form's button is "Add to Routine": besides saving the product to
-      // the shelf, put it in the routine for the day being viewed.
-      await addToRoutine(dateKey, saved.id)
+      // the shelf, put it in the routine for the day being viewed — or, when
+      // the day picker was used, for every picked day in the chosen period.
+      const dates = schedule
+        ? scheduleDates(dateKey, schedule.days, schedule.span)
+        : [dateKey]
+
+      if (dates.length > 1) {
+        await addToRoutineDates(dates, saved.id)
+      } else {
+        await addToRoutine(dates[0] ?? dateKey, saved.id)
+      }
 
       setShowForm(false)
       setEditProduct(null)
@@ -329,6 +371,27 @@ export default function Routine() {
   const addedIds = new Set(visibleItems.map((i) => String(i.productId)))
 
   const quickAdd = async (productId) => {
+    // Day picker on the shelf tab: add to every picked day in the chosen
+    // period. "Just this day" falls through to the one-day code below.
+    if (shelfDays !== null) {
+      const dates = scheduleDates(dateKey, shelfDays, shelfSpan)
+
+      if (!dates.length) {
+        notify('Pick at least one day.')
+        return
+      }
+
+      if (!(dates.length === 1 && dates[0] === dateKey)) {
+        try {
+          await addToRoutineDates(dates, productId, timeOfDay)
+          await reload()
+        } catch (error) {
+          console.error('Failed to add product to routine:', error)
+        }
+        return
+      }
+    }
+
     try {
       const existing = items.find(
         (i) => String(i.productId) === String(productId)
@@ -1376,6 +1439,33 @@ export default function Routine() {
 
               </div>
 
+              <div className="mb-3 px-1">
+                <button
+                  type="button"
+                  onClick={() => setShelfPickerOpen((o) => !o)}
+                  className="text-sm text-gg-600 font-bold hover:underline text-left"
+                >
+                  Adds to:{' '}
+                  {shelfDays === null
+                    ? 'Just this day'
+                    : summarizeSchedule(shelfDays, shelfSpan)}
+                  {' · '}
+                  {shelfPickerOpen ? 'Hide' : 'Change'}
+                </button>
+
+                {shelfPickerOpen && (
+                  <div className="card !rounded-xl p-4 mt-3">
+                    <SchedulePicker
+                      days={shelfDaysShown}
+                      setDays={setShelfDays}
+                      span={shelfSpan}
+                      setSpan={setShelfSpan}
+                      viewedWeekday={viewedWeekday}
+                    />
+                  </div>
+                )}
+              </div>
+
               {availableShelfProducts.length === 0 && (
                 <div className="
                   text-muted
@@ -1474,6 +1564,8 @@ export default function Routine() {
             <ProductForm
               product={null}
               routineItems={items}
+              showSchedule
+              viewedDate={dateKey}
               onCancel={() => setShowForm(false)}
               onSaved={addProductFlow}
             />

@@ -1,16 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { fetchUsers } from '../../api/services'
-import { PageTitle, StatusBadge, Loading, cardCls, inputCls, btnGreen, formatDate, roleLabel } from './adminUi'
-
-function StatCard({ label, value }) {
-  return (
-    <div className={`${cardCls} px-3 sm:px-5 py-3 sm:py-4`}>
-      <p className="text-xs sm:text-lg lg:text-xl font-semibold leading-tight">{label}</p>
-      <p className="mt-1 sm:mt-2 text-center text-3xl sm:text-5xl font-semibold">{value}</p>
-    </div>
-  )
-}
+import {
+  PageTitle, StatusBadge, Loading, SummaryCard, UsersIcon, PulseIcon, UserXIcon,
+  cardCls, inputCls, btnGreen, formatDate, roleLabel,
+} from './adminUi'
 
 export default function UsersList() {
   const navigate = useNavigate()
@@ -48,9 +42,9 @@ export default function UsersList() {
       <PageTitle sub="Manage registered GlowGuard Accounts">Users</PageTitle>
 
       <div className="grid grid-cols-3 gap-2 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
-        <StatCard label="Total Users" value={stats.total} />
-        <StatCard label="Active Users" value={stats.active} />
-        <StatCard label="Deactivated Users" value={stats.deactivated} />
+        <SummaryCard icon={UsersIcon} label="Total Users" value={stats.total} />
+        <SummaryCard icon={PulseIcon} label="Active Users" value={stats.active} />
+        <SummaryCard icon={UserXIcon} label="Deactivated Users" value={stats.deactivated} />
       </div>
 
       <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3 mb-5 sm:mb-6">

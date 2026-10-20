@@ -5,18 +5,18 @@ import { logoutUser } from '../api/services'
 import Wordmark from './Wordmark'
 
 const links = [
-  { to: '/', label: 'Home', icon: HomeIcon },
+  { to: '/', label: 'Reco', icon: RecoIcon },
   { to: '/shelf', label: 'Shelf', icon: ShelfIcon },
   { to: '/routine', label: 'Routine', icon: RoutineIcon },
   { to: '/tracker', label: 'Tracker', icon: TrackerIcon },
   { to: '/account', label: 'Account', icon: AccountIcon },
 ]
 
-function HomeIcon({ className }) {
+function RecoIcon({ className }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className}>
-      <path d="M3.5 10.5 12 4l8.5 6.5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" stroke="currentColor" />
-      <path d="M5.5 9.5V19a1 1 0 0 0 1 1H9a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h2.5a1 1 0 0 0 1-1V9.5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" stroke="currentColor" />
+      <path d="M12 3.5l1.9 5.1 5.1 1.9-5.1 1.9L12 17.5l-1.9-5.1L5 10.5l5.1-1.9L12 3.5Z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" stroke="currentColor" />
+      <path d="M18.5 16v4M16.5 18h4" strokeWidth="2" strokeLinecap="round" stroke="currentColor" />
     </svg>
   )
 }
