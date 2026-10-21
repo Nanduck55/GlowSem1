@@ -9,8 +9,11 @@ const RESET_TTL_MINUTES = 60;
 
 function frontend_url(): string
 {
-    return rtrim(getenv('FRONTEND_URL') ?: 'https://subprime-snort-sensitive.ngrok-free.dev/', '/');
+    return rtrim(getenv('FRONTEND_URL') ?: 'http://localhost:5173/', '/');
 }
+
+//http://localhost:5173/
+//https://subprime-snort-sensitive.ngrok-free.dev/
 
 function reset_dev_mode(): bool
 {

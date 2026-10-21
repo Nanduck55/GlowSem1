@@ -28,7 +28,10 @@ function find_routine_product(PDO $pdo, int $userId, string $date, int $productI
  * Puts a product in one day's routine (does nothing if it is already there).
  * Used by the "several days at once" POST below.
  */
-function add_product_to_day(PDO $pdo, int $userId, string $date, int $productId): void
+/**
+ * Puts a product in one day's routine with schedule parameters.
+ */
+function add_product_to_day(PDO $pdo, int $userId, string $date, int $productId, array $schedule = []): void
 {
     $rid = find_or_create_routine($pdo, $userId, $date, DAILY_TYPE);
 
@@ -40,9 +43,17 @@ function add_product_to_day(PDO $pdo, int $userId, string $date, int $productId)
         $step = (int) $next->fetchColumn();
 
         $pdo->prepare(
-            'INSERT INTO routine_products (routine_id, product_id, step_order)
-             VALUES (:rid, :pid, :step)'
-        )->execute(['rid' => $rid, 'pid' => $productId, 'step' => $step]);
+            'INSERT INTO routine_products (routine_id, product_id, step_order, start_date, duration, target_days, status)
+             VALUES (:rid, :pid, :step, :start_date, :duration, :target_days, :status)'
+        )->execute([
+            'rid'         => $rid, 
+            'pid'         => $productId, 
+            'step'        => $step,
+            'start_date'  => $schedule['start_date'] ?? null,
+            'duration'    => $schedule['duration'] ?? null,
+            'target_days' => isset($schedule['target_days']) ? json_encode($schedule['target_days']) : null,
+            'status'      => $schedule['status'] ?? 'active'
+        ]);
     }
 }
 
@@ -106,6 +117,13 @@ switch ($_SERVER['REQUEST_METHOD']) {
 
     case 'POST':
         $data = body();
+
+        $schedule = [
+            'start_date'  => $data['start_date'] ?? null,
+            'duration'    => $data['duration'] ?? null,
+            'target_days' => $data['target_days'] ?? null,
+            'status'      => $data['status'] ?? 'active'
+        ];
 
         // Several days at once: { dates: ['YYYY-MM-DD', ...], productId }
         // (the day picker in Add Product). Single-date requests below are unchanged.
@@ -200,6 +218,14 @@ switch ($_SERVER['REQUEST_METHOD']) {
 
     case 'PUT':
         $data = body();
+
+        $schedule = [
+            'start_date'  => $data['start_date'] ?? null,
+            'duration'    => $data['duration'] ?? null,
+            'target_days' => $data['target_days'] ?? null,
+            'status'      => $data['status'] ?? 'active'
+        ];
+        
         $date = $data['date'] ?? null;
 
         // Reorder cards: { date, order: [productId, productId, ...] }

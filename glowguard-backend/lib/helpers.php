@@ -116,10 +116,11 @@ function routine_items(PDO $pdo, int $userId, string $date): array
     if ($rid === null) return [];
 
     $stmt = $pdo->prepare(
-        'SELECT product_id FROM routine_products
-         WHERE routine_id = :rid
-         ORDER BY step_order ASC, routine_product_id ASC'
-    );
+            'SELECT product_id, start_date, duration, target_days, status 
+             FROM routine_products
+             WHERE routine_id = :rid
+             ORDER BY step_order ASC, routine_product_id ASC'
+        );
     $stmt->execute(['rid' => $rid]);
 
     $done = completed_periods($pdo, $userId, $date);
@@ -137,6 +138,10 @@ function routine_items(PDO $pdo, int $userId, string $date): array
             'completedPM' => $pm,
             'removedAM'   => isset($removed[$pid]['AM']),
             'removedPM'   => isset($removed[$pid]['PM']),
+            'start_date'  => $row['start_date'],
+            'duration'    => $row['duration'],
+            'target_days' => $row['target_days'] ? json_decode($row['target_days'], true) : [],
+            'status'      => $row['status']
         ];
     }
     return $out;

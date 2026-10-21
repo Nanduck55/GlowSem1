@@ -37,13 +37,14 @@ function rec_input(PDO $pdo, array $data): array
     if ($description === '') json_error('Description is required.', 400);
     if (mb_strlen($description) > 500) json_error('Description must be 500 characters or fewer.', 422);
 
-    if (strcasecmp($star, 'None') === 0) $star = '';
-    if ($star !== '') {
-        $stmt = $pdo->prepare('SELECT ingredient_name FROM active_ingredients WHERE LOWER(ingredient_name) = LOWER(:n) LIMIT 1');
+    // Look up ingredient_id instead of ingredient_name
+    $starId = null;
+    if ($star !== '' && strcasecmp($star, 'None') !== 0) {
+        $stmt = $pdo->prepare('SELECT ingredient_id FROM active_ingredients WHERE LOWER(ingredient_name) = LOWER(:n) LIMIT 1');
         $stmt->execute(['n' => $star]);
-        $canonical = $stmt->fetchColumn();
-        if ($canonical === false) json_error("Unknown ingredient: '$star'", 422);
-        $star = (string) $canonical;
+        $foundId = $stmt->fetchColumn();
+        if ($foundId === false) json_error("Unknown ingredient: '$star'", 422);
+        $starId = (int) $foundId;
     }
 
     $visible = true;
@@ -56,7 +57,7 @@ function rec_input(PDO $pdo, array $data): array
         'name'           => $name,
         'category'       => $category,
         'skinType'       => $skinType,
-        'starIngredient' => $star,
+        'starIngredient' => $starId,
         'description'    => $description,
         'visible'        => $visible,
     ];
