@@ -34,6 +34,13 @@ function rec_input(PDO $pdo, array $data): array
     $skinType = rec_pick((string) ($data['skinType'] ?? ''), REC_SKIN_TYPES);
     if ($skinType === null) json_error('Choose a valid skin type.', 422);
 
+    $timeOfDayVal = $data['timeOfDay'] ?? $data['time_of_day'] ?? 'Both';
+    $timeOfDay = 'Both';
+    if (trim((string) $timeOfDayVal) !== '') {
+        $timeOfDay = rec_pick((string) $timeOfDayVal, REC_TIMES);
+        if ($timeOfDay === null) json_error('Choose AM, PM or Both for the time of day.', 422);
+    }
+
     if ($description === '') json_error('Description is required.', 400);
     if (mb_strlen($description) > 500) json_error('Description must be 500 characters or fewer.', 422);
 
@@ -57,6 +64,7 @@ function rec_input(PDO $pdo, array $data): array
         'name'           => $name,
         'category'       => $category,
         'skinType'       => $skinType,
+        'timeOfDay'      => $timeOfDay, 
         'starIngredient' => $starId,
         'description'    => $description,
         'visible'        => $visible,

@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { fetchUsers } from '../../api/services'
+import ExportButton from '../../components/ExportButton'
+import { buildUsersExport } from '../../api/exportData'
 import {
   PageTitle, StatusBadge, Loading, SummaryCard, UsersIcon, PulseIcon, UserXIcon,
-  cardCls, inputCls, btnGreen, formatDate, roleLabel,
+  cardCls, inputCls, btnGreen, btnOutline, formatDate, roleLabel,
 } from './adminUi'
 
 export default function UsersList() {
@@ -61,6 +63,14 @@ export default function UsersList() {
           <option value="active">Active</option>
           <option value="deactivated">Deactivated</option>
         </select>
+        <div className="col-span-2 sm:col-span-1 sm:ml-auto">
+          <ExportButton
+            className={`${btnOutline} !py-2 w-full sm:w-auto`}
+            filename="glowguard-users"
+            disabled={!users}
+            getData={() => buildUsersExport(filtered)}
+          />
+        </div>
       </div>
 
       {error && <p className="text-sm text-red-600 mb-4">{error}</p>}

@@ -45,6 +45,10 @@ export default function CurationView() {
             <input className={`${inputCls} sm:!w-56`} value={rec.skinType} readOnly />
           </div>
           <div>
+            <p className="text-base sm:text-lg font-medium mb-1">Best Time to Use</p>
+            <input className={`${inputCls} sm:!w-56`} value={rec.timeOfDay === 'AM' ? 'AM' : rec.timeOfDay === 'PM' ? 'PM' : 'Both'} readOnly />
+          </div>
+          <div>
             <p className="text-base sm:text-lg font-medium mb-1">Star Ingredient</p>
             <input className={`${inputCls} sm:!w-56`} value={rec.starIngredient} placeholder="None" readOnly />
           </div>

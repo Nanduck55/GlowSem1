@@ -15,4 +15,4 @@ export const SEVERITY_LEVELS = ['Potential Conflict', 'Caution', 'Info']
 export const DEFAULT_SEVERITY = 'Potential Conflict'
 
 // ingredient_clash_rules.source_reference is VARCHAR(45).
-export const SOURCE_MAX_LENGTH = 45
+

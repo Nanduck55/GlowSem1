@@ -4,6 +4,8 @@ import { useApp } from '../context/AppContext'
 import { CATEGORIES } from '../api/services'
 import Modal from '../components/Modal'
 import ProductForm from '../components/ProductForm'
+import ExportButton from '../components/ExportButton'
+import { buildShelfExport } from '../api/exportData'
 
 export default function Shelf() {
   const { products, saveProduct, deleteProduct } = useApp()
@@ -53,7 +55,15 @@ export default function Shelf() {
             PAGE HEADER
         ===================================================== */}
 
-        <div className="w-full mb-5">
+        <div className="w-full mb-5 relative">
+          <div className="absolute right-0 top-0">
+            <ExportButton
+              className="btn-outline !px-4 !py-1.5 !text-[13px]"
+              filename="glowguard-shelf"
+              getData={() => buildShelfExport(products)}
+            />
+          </div>
+
           <h1 className="text-2xl font-extrabold sm:text-3xl">
             My Shelf
           </h1>

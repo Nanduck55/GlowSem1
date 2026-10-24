@@ -2,7 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { CATEGORIES } from '../api/constants'
-import { skinTypeKey } from '../api/services'
+import { skinTypeKey, addToRoutineDates } from '../api/services'
+import SchedulePicker, { weekdayIndex, scheduleDates } from '../components/SchedulePicker'
+import SafetyCard from '../components/SafetyCard'
+import { worstTone, sortBySeverity } from '../api/severityTone'
+import { usePeriod } from '../api/usePeriod'
+import PeriodToggle, { TimeTag, recTime } from '../components/PeriodToggle'
 
 /* =========================================================
    FOR YOU AND YOUR SKIN
@@ -72,7 +77,10 @@ function SkinArt() {
 function RecommendationCard({ rec, onAdd }) {
   return (
     <article className="flex flex-col rounded-xl border border-[#cfdcc9] bg-[#e1eadb] p-4 shadow-[0_1px_3px_rgba(0,0,0,.12)]">
-      <h3 className="text-base font-medium leading-snug text-[#1c2b22] break-words">{rec.name}</h3>
+      <div className="flex items-start justify-between gap-2">
+        <h3 className="text-base font-medium leading-snug text-[#1c2b22] break-words">{rec.name}</h3>
+        <TimeTag rec={rec} className="shrink-0" />
+      </div>
 
       {rec.starIngredient && (
         <>
@@ -95,9 +103,17 @@ function RecommendationCard({ rec, onAdd }) {
 /* ---------------------- Add to Routine modal ---------------------- */
 function AddToRoutineModal({ rec, onClose }) {
   const { products, rules, loadRoutine, saveProduct, addToRoutine, setPeriodRemoved, notify } = useApp()
-  const [when, setWhen] = useState('')
+  // Preselect from the recommendation's best time (AM / PM / Both). Still editable.
+  const [when, setWhen] = useState(() => recTime(rec) === 'Both' ? 'Both' : recTime(rec))
   const [busy, setBusy] = useState(false)
   const today = dateKey()
+
+  // How often: starts as "just today" (the way this always worked). The day
+  // picker can add the product to more days, like the Routine page.
+  const [days, setDays] = useState(() =>
+    Array.from({ length: 7 }, (_, i) => i === weekdayIndex(dateKey()))
+  )
+  const [span, setSpan] = useState(0) // 0 = "Not set", same default as the Routine page
 
   // Today's routine, so we can warn about clashes with what is already in it
   // and avoid shifting an existing product into a period it wasn't in.
@@ -148,7 +164,7 @@ function AddToRoutineModal({ rec, onClose }) {
   }, [rec, todayItems, when, products, rules])
 
   const confirmAdd = async () => {
-    if (!when || busy) return
+    if (!when || busy || !days.some(Boolean)) return
     setBusy(true)
 
     try {
@@ -177,28 +193,44 @@ function AddToRoutineModal({ rec, onClose }) {
         productId = saved.id
       }
 
-      const todayRow = (todayItems ?? []).find((i) => String(i.productId) === String(productId))
-      const rowExisted = Boolean(todayRow)
-      await addToRoutine(today, productId)
+      // Which days this goes on. Today's routine is handled exactly as before;
+      // any other picked days are added in one request.
+      const dates = scheduleDates(today, days, span)
+      const includesToday = dates.includes(today)
+      const otherDates = dates.filter((d) => d !== today)
 
-      // A "Both" product is one routine row shared by AM and PM (see Routine.jsx).
-      // When only one period was picked, keep it out of the other one for today.
-      if (!rowExisted && finalTime.toUpperCase() === 'BOTH' && when !== 'Both') {
-        await setPeriodRemoved(today, productId, when === 'AM' ? 'PM' : 'AM', true)
-      }
+      if (includesToday) {
+        const todayRow = (todayItems ?? []).find((i) => String(i.productId) === String(productId))
+        const rowExisted = Boolean(todayRow)
+        await addToRoutine(today, productId)
 
-      // It was already in today's routine but had been taken out of a period
-      // that was just picked again: bring it back there.
-      if (rowExisted) {
-        for (const per of periods) {
-          if ((per === 'PM' ? todayRow.removedPM : todayRow.removedAM) === true) {
-            await setPeriodRemoved(today, productId, per, false)
+        // A "Both" product is one routine row shared by AM and PM (see Routine.jsx).
+        // When only one period was picked, keep it out of the other one for today.
+        if (!rowExisted && finalTime.toUpperCase() === 'BOTH' && when !== 'Both') {
+          await setPeriodRemoved(today, productId, when === 'AM' ? 'PM' : 'AM', true)
+        }
+
+        // It was already in today's routine but had been taken out of a period
+        // that was just picked again: bring it back there.
+        if (rowExisted) {
+          for (const per of periods) {
+            if ((per === 'PM' ? todayRow.removedPM : todayRow.removedAM) === true) {
+              await setPeriodRemoved(today, productId, per, false)
+            }
           }
         }
       }
 
+      if (otherDates.length) {
+        await addToRoutineDates(otherDates, productId, when === 'Both' ? undefined : when)
+      }
+
       const label = when === 'Both' ? 'AM and PM routines' : `${when} routine`
-      notify(`"${rec.name}" added to your ${label}.`)
+      notify(
+        dates.length > 1
+          ? `"${rec.name}" added to your ${label} for ${dates.length} days.`
+          : `"${rec.name}" added to your ${label}.`
+      )
       onClose()
     } catch (error) {
       notify(error.response?.data?.error || 'Could not add this product to your routine.', false)
@@ -215,7 +247,7 @@ function AddToRoutineModal({ rec, onClose }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-routine-title"
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-[#c5d3bf] bg-[#e1eadb] px-6 py-8 text-center shadow-[0_12px_32px_rgba(0,0,0,.3)] sm:px-10"
+        className="gg-reco-modal max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-[#c5d3bf] bg-[#e1eadb] px-6 py-8 text-center shadow-[0_12px_32px_rgba(0,0,0,.3)] sm:px-10"
       >
         <h2 id="add-routine-title" className="text-2xl font-semibold text-[#1c2b22]">Add to Routine</h2>
         <p className="mt-1 text-sm font-medium text-[#3a4a40]">{rec.name}</p>
@@ -236,17 +268,27 @@ function AddToRoutineModal({ rec, onClose }) {
           ))}
         </div>
 
+        <p className="mt-8 text-lg font-medium text-[#1c2b22]">Choose how often.</p>
+        <div className="mt-4 text-left">
+          <SchedulePicker
+            days={days}
+            setDays={setDays}
+            span={span}
+            setSpan={setSpan}
+            viewedWeekday={weekdayIndex(today)}
+          />
+        </div>
+
         {warnings.length > 0 && (
-          <div className="mt-6 rounded-r-xl border-l-4 border-amber-500 bg-amber-50 p-4 text-left">
-            <p className="flex items-center gap-1.5 text-[13px] font-extrabold text-amber-900">
-              <span aria-hidden="true">⚠</span> Ingredient Clash Warning
+          <div className="mt-6 space-y-3 text-left">
+            <p className="flex items-center gap-1.5 px-1 text-[13px] font-extrabold text-[#1c2b22]">
+              <span aria-hidden="true">{worstTone(warnings) === 'info' ? 'ⓘ' : '⚠'}</span>{' '}
+              {worstTone(warnings) === 'info' ? 'Ingredient Info' : 'Ingredient Clash Warning'}
             </p>
-            {warnings.map((r) => (
-              <p key={r.id} className="mt-1 text-xs leading-relaxed text-amber-800">
-                <b>{r.severity}:</b> {r.message}
-              </p>
+            {sortBySeverity(warnings).map((r) => (
+              <SafetyCard key={r.id} rule={r} />
             ))}
-            <p className="mt-2 text-[11px] text-amber-800/80">You can still add it — just keep this in mind.</p>
+            <p className="px-1 text-[11px] text-[#3a4a40]">You can still add it — just keep this in mind.</p>
           </div>
         )}
 
@@ -259,7 +301,7 @@ function AddToRoutineModal({ rec, onClose }) {
           >
             Cancel
           </button>
-          <button type="button" onClick={confirmAdd} disabled={!when || busy} className={greenBtn}>
+          <button type="button" onClick={confirmAdd} disabled={!when || busy || !days.some(Boolean)} className={greenBtn}>
             {busy ? 'Adding…' : 'Add to Routine'}
           </button>
         </div>
@@ -274,31 +316,40 @@ export default function Recommendations() {
   const { user, recommendations, recsLoaded } = useApp()
   const [picked, setPicked] = useState(null)
   const [categoryFilter, setCategoryFilter] = useState('All')
+  // Same remembered AM / PM choice as the Routine and Tracker pages.
+  const [period, setPeriod] = usePeriod(new Date().getHours() >= 12 ? 'PM' : 'AM')
 
   const skinType = skinTypeKey(user?.skinType)
   const firstName = user?.name?.trim()?.split(/\s+/)[0] ?? 'Your'
 
   const sections = useMemo(() => {
     if (!skinType) return []
-    const mine = recommendations.filter((r) => r.visible !== false && r.skinType === skinType)
+    const mine = recommendations.filter(
+      (r) => r.visible !== false && r.skinType === skinType && (recTime(r) === period || recTime(r) === 'Both')
+    )
     const order = [...CATEGORIES, ...new Set(mine.map((r) => r.category).filter((c) => !CATEGORIES.includes(c)))]
     return order
       .filter((category) => categoryFilter === 'All' || category === categoryFilter)
       .map((category) => ({ category, items: mine.filter((r) => r.category === category) }))
       .filter((s) => s.items.length > 0)
-  }, [recommendations, skinType, categoryFilter])
+  }, [recommendations, skinType, categoryFilter, period])
 
   return (
     <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-6 sm:py-8">
       {/* ---------- header ---------- */}
       <div className="grid gap-6 lg:grid-cols-[1fr_minmax(0,460px)] lg:items-center">
         <div>
-          <h1 className="rec-heading font-serif text-4xl font-bold leading-tight text-gg-900 sm:text-5xl">
-            For You and your Skin
-          </h1>
+          <div className="flex items-start justify-between gap-4">
+            <h1 className="rec-heading font-serif text-4xl font-bold leading-tight text-gg-900 sm:text-5xl">
+              For You and your Skin
+            </h1>
+            <div className="mt-2">
+              <PeriodToggle value={period} onChange={setPeriod} />
+            </div>
+          </div>
           <p className="mt-3 text-base text-ink">
             {skinType
-              ? `Products curated by GlowCouncil for ${skinType} Skin.`
+              ? `${period === 'AM' ? 'Morning' : 'Night'} products curated by GlowCouncil for ${skinType} Skin.`
               : 'Products curated by GlowCouncil, matched to your skin type.'}
           </p>
         </div>
@@ -390,8 +441,12 @@ export default function Recommendations() {
 
           {skinType && recsLoaded && sections.length === 0 && (
             <div className="card px-6 py-10 text-center">
-              <p className="text-lg font-semibold text-ink">No recommendations for {skinType} Skin yet</p>
-              <p className="mt-1 text-sm text-muted">The GlowCouncil is still curating products for your skin type — check back soon.</p>
+              <p className="text-lg font-semibold text-ink">
+                No {period} recommendations for {skinType} Skin yet
+              </p>
+              <p className="mt-1 text-sm text-muted">
+                Try the {period === 'AM' ? 'PM' : 'AM'} view, or check back soon — the GlowCouncil is still curating products for your skin type.
+              </p>
             </div>
           )}
         </div>

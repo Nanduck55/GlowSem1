@@ -4,6 +4,34 @@ import { useApp } from '../../context/AppContext'
 import { PageTitle, Loading } from '../admin/adminUi'
 import { panelCls, inputCls, btnPrimary, btnDanger, SeverityBadge } from './consultantUi'
 
+// Turns any web address in the source text into a clickable link.
+const URL_RE = /((?:https?:\/\/|www\.)[^\s<>"']+)/gi
+
+function SourceText({ text }) {
+  if (!text) return <p className="text-sm text-[#59645d]">No source recorded.</p>
+
+  return (
+    <div className={`${inputCls} whitespace-pre-wrap break-words min-h-[3.5rem]`}>
+      {text.split(URL_RE).map((part, i) => {
+        if (!/^(https?:\/\/|www\.)/i.test(part)) return part
+        // keep trailing punctuation out of the link
+        const clean = part.replace(/[.,;:!?)]+$/, '')
+        const tail = part.slice(clean.length)
+        const href = /^https?:\/\//i.test(clean) ? clean : `https://${clean}`
+        return (
+          <span key={i}>
+            <a href={href} target="_blank" rel="noopener noreferrer"
+               className="underline text-[#2d7a4f] hover:opacity-80 break-all">
+              {clean}
+            </a>
+            {tail}
+          </span>
+        )
+      })}
+    </div>
+  )
+}
+
 export default function RuleDetails() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -47,8 +75,7 @@ export default function RuleDetails() {
 
           <div className="sm:col-span-3">
             <p className="text-base sm:text-lg font-medium mb-1">Source References</p>
-            <textarea className={inputCls} rows={2} readOnly
-                      value={rule.source || ''} placeholder="No source recorded." />
+            <SourceText text={rule.source} />
           </div>
 
           <div className="sm:col-span-3">

@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { logoutUser, updateProfile } from '../api/services'
+import ExportButton from '../components/ExportButton'
+import { buildMyDataExport } from '../api/exportData'
 
 // ------------------------------------------------------------------
 // helpers
@@ -74,7 +76,7 @@ const Value = ({ children }) => <p className="break-words text-base text-ink">{c
 // ------------------------------------------------------------------
 
 export default function Account() {
-  const { user, setUser, notify } = useApp()
+  const { user, setUser, notify, products } = useApp()
   const navigate = useNavigate()
 
   // Skin type comes from the backend now — the Landing page skin quiz
@@ -159,6 +161,13 @@ export default function Account() {
                 Edit Profile
               </button>
             )}
+
+            <ExportButton
+              className="btn-outline"
+              filename="glowguard-my-data"
+              label="Export My Data"
+              getData={() => buildMyDataExport(user, products)}
+            />
 
             <button type="button" onClick={logout} className="btn-danger">
               <LogoutIcon />

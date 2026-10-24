@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '../context/AppContext'
 import { usePeriod } from '../api/usePeriod'
+import { DayRing, DayLegend, dayProgress, progressLabel } from '../components/DayProgress'
+import ExportButton from '../components/ExportButton'
+import { buildRoutineExport, USER_RANGES } from '../api/exportData'
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
@@ -181,6 +184,15 @@ export default function Tracker() {
             Skin Journey
           </h1>
 
+          <div className="ml-auto mr-3">
+            <ExportButton
+              className="btn-outline !px-4 !py-1.5 !text-[13px]"
+              filename="glowguard-routine"
+              ranges={USER_RANGES}
+              getData={buildRoutineExport}
+            />
+          </div>
+
           <button
             type="button"
             onClick={() => setTimeOfDay(timeOfDay === 'AM' ? 'PM' : 'AM')}
@@ -288,28 +300,41 @@ export default function Tracker() {
               {days.map((date, index) => {
                 const key = dateKey(date)
                 const isSelected = selectedDate === key
+                const isToday = key === dateKey(new Date())
+                const prog = dayProgress(routines[key], products)
 
                 return (
                   <button
                     key={key}
                     type="button"
                     onClick={() => setSelectedDate(key)}
-                    className={`w-full min-w-0 h-16 sm:h-[72px] rounded-xl border flex flex-col items-center justify-center transition ${isSelected
-                      ? 'bg-white border-gg-500 shadow-md ring-1 ring-gg-300'
-                      : 'bg-white border-gg-200 hover:border-gg-400 hover:shadow-sm'
+                    aria-label={`${date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}, ${progressLabel(prog)}`}
+                    className={`relative w-full min-w-0 h-[76px] sm:h-[104px] rounded-2xl border flex flex-col items-center justify-center gap-0.5 sm:gap-1 transition-all ${isSelected
+                      ? 'bg-white border-gg-500 shadow-md ring-2 ring-gg-300'
+                      : prog.level === 'full'
+                        ? 'bg-white border-gg-400 hover:shadow-sm'
+                        : 'bg-white border-gg-200 hover:border-gg-400 hover:shadow-sm'
                       }`}
                   >
-                    <span className="text-[10px] sm:text-xs font-bold text-ink">
+                    <span className="text-[10px] sm:text-xs uppercase tracking-wide text-muted">
+                      {DAYS[index]}
+                    </span>
+
+                    <span className="text-base sm:text-xl font-extrabold leading-none text-ink">
                       {date.getDate()}
                     </span>
 
-                    <span className="text-[10px] sm:text-xs text-muted">
-                      {DAYS[index]}
-                    </span>
+                    <DayRing {...prog} />
+
+                    {isToday && (
+                      <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 h-1.5 w-1.5 rounded-full bg-gg-500" aria-hidden="true" />
+                    )}
                   </button>
                 )
               })}
             </div>
+
+            <DayLegend />
           </div>
         </div>
 

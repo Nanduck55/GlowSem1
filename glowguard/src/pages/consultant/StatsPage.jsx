@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchConsultantStats } from '../../api/services'
 import { PageTitle, Loading } from '../admin/adminUi'
+import { btnOutline } from './consultantUi'
+import ExportButton from '../../components/ExportButton'
+import { buildConsultantStatsExport } from '../../api/exportData'
 
 // Lighter pink used on this page only; the other consultant pages keep the standard panel colour.
 const lightPanel = 'bg-[#f8dcec] rounded-2xl shadow-[0_2px_4px_rgba(0,0,0,.18)]'
@@ -202,6 +205,15 @@ export default function StatsPage() {
           <span className="mt-0.5 shrink-0 text-[#7a1456]"><InfoIcon size={16} /></span>
           <p>Statistics reflect current safety rules, published recommendations, and users' saved skincare products.</p>
         </div>
+      </div>
+
+      <div className="mb-5 flex justify-end">
+        <ExportButton
+          className={btnOutline}
+          filename="glowguard-consultant-statistics"
+          disabled={!stats}
+          getData={() => buildConsultantStatsExport(stats)}
+        />
       </div>
 
       {error && <p className="text-sm font-semibold text-[#a3102a] mb-4">{error}</p>}

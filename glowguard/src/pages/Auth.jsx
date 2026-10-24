@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
 import { loginUser, registerUser } from '../api/services'
 
@@ -300,7 +300,13 @@ function PasswordField({
 ========================================================= */
 
 export default function Auth() {
-  const [mode, setMode] = useState('login')
+  const location = useLocation()
+
+  const [mode, setMode] = useState(() =>
+    new URLSearchParams(location.search).get('mode') === 'register'
+      ? 'register'
+      : 'login'
+  )
 
   const [form, setForm] = useState({
     name: '',

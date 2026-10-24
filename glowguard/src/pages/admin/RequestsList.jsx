@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { fetchRequests, decideRequest } from '../../api/services'
+import ExportButton from '../../components/ExportButton'
+import { buildRequestsExport } from '../../api/exportData'
 import { useApp } from '../../context/AppContext'
 import {
   PageTitle,
@@ -11,6 +13,7 @@ import {
   inputCls,
   btnGreen,
   btnRed,
+  btnOutline,
   formatDate,
   roleLabel,
 } from './adminUi'
@@ -107,6 +110,14 @@ export default function RequestsList() {
           <option value="consultant">Beauty Consultant</option>
           <option value="admin">Admin</option>
         </select>
+        <div className="col-span-2 sm:col-span-1 sm:ml-auto">
+          <ExportButton
+            className={`${btnOutline} !py-2 w-full sm:w-auto`}
+            filename="glowguard-staff-requests"
+            disabled={!requests}
+            getData={() => buildRequestsExport(requests ?? [])}
+          />
+        </div>
       </div>
 
       {error && <p className="text-sm text-red-600 mb-4">{error}</p>}

@@ -3,7 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { CATEGORIES, SKIN_TYPES } from '../../api/constants'
 import { PageTitle, Loading } from '../admin/adminUi'
-import { inputCls, btnPrimary, btnSoft, btnDanger, VisibilityDot } from './consultantUi'
+import { inputCls, btnPrimary, btnSoft, btnDanger, btnOutline, VisibilityDot } from './consultantUi'
+import ExportButton from '../../components/ExportButton'
+import { buildCurationExport } from '../../api/exportData'
+import { TimeTag, recTime } from '../../components/PeriodToggle'
 
 function RecommendationCard({ rec, onView, onEdit, onDelete, busy }) {
   return (
@@ -13,11 +16,14 @@ function RecommendationCard({ rec, onView, onEdit, onDelete, busy }) {
         <VisibilityDot visible={rec.visible} />
       </div>
 
-      {rec.starIngredient && (
-        <span className="mt-1.5 self-start rounded-md bg-[#dc9bc8] px-2 py-0.5 text-[10px] font-medium text-[#3a1030]">
-          {rec.starIngredient}
-        </span>
-      )}
+      <div className="mt-1.5 flex flex-wrap gap-1.5">
+        {rec.starIngredient && (
+          <span className="rounded-md bg-[#dc9bc8] px-2 py-0.5 text-[10px] font-medium text-[#3a1030]">
+            {rec.starIngredient}
+          </span>
+        )}
+        <TimeTag rec={rec} />
+      </div>
 
       <p className="mt-2 text-xs text-black">
         Recommended Skin Type: <b className="font-semibold">{rec.skinType}</b>
@@ -41,6 +47,7 @@ export default function CurationList() {
   const [search, setSearch] = useState('')
   const [skinType, setSkinType] = useState('')
   const [category, setCategory] = useState('')
+  const [time, setTime] = useState('')
   const [busyId, setBusyId] = useState(null)
 
   const groups = useMemo(() => {
@@ -48,6 +55,7 @@ export default function CurationList() {
     const filtered = recommendations.filter((r) => {
       if (skinType && r.skinType !== skinType) return false
       if (category && r.category !== category) return false
+      if (time && recTime(r) !== time && recTime(r) !== 'Both') return false
       if (q && !`${r.name} ${r.starIngredient} ${r.description}`.toLowerCase().includes(q)) return false
       return true
     })
@@ -56,7 +64,7 @@ export default function CurationList() {
     return order
       .map((c) => ({ category: c, items: filtered.filter((r) => r.category === c) }))
       .filter((g) => g.items.length > 0)
-  }, [recommendations, search, skinType, category])
+  }, [recommendations, search, skinType, category, time])
 
   const remove = async (rec) => {
     if (!confirm(`Delete "${rec.name}"? It will no longer be recommended to anyone.`)) return
@@ -95,6 +103,19 @@ export default function CurationList() {
           <option value="">Category</option>
           {CATEGORIES.filter((c) => c !== 'Other').map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
+        <select className={`${inputCls} sm:!w-[150px]`} value={time} onChange={(e) => setTime(e.target.value)} aria-label="Filter by time of day">
+          <option value="">AM / PM</option>
+          <option value="AM">AM</option>
+          <option value="PM">PM</option>
+        </select>
+        <div className="col-span-2 sm:col-span-1">
+          <ExportButton
+            className={`${btnOutline} !py-2 w-full sm:w-auto`}
+            filename="glowguard-curation"
+            disabled={!recsLoaded}
+            getData={() => buildCurationExport(groups.flatMap((g) => g.items))}
+          />
+        </div>
       </div>
 
       {!recsLoaded && <Loading />}

@@ -3,6 +3,8 @@ import { useApp } from '../context/AppContext'
 import { CATEGORIES } from '../api/services'
 import { findDraftClashes, fetchIngredientDescriptions } from '../api/services'
 import SchedulePicker, { weekdayIndex } from './SchedulePicker'
+import { worstTone, sortBySeverity } from '../api/severityTone'
+import SafetyCard from './SafetyCard'
 
 // Local-time date key (YYYY-MM-DD) — same rule as Routine.jsx.
 const todayKey = () => {
@@ -219,6 +221,7 @@ export default function ProductForm({ product, onSaved, onCancel, routineItems, 
   // keeps it from clashing with itself.
   const previewProduct = { ...form, id: product?.id ?? '__draft__' }
   const previewClashes = findDraftClashes(previewProduct, existingItems, products, rules)
+  const previewTone = previewClashes.length ? worstTone(previewClashes.map((c) => c.rule)) : 'info'
 
   const submit = (e) => {
     e.preventDefault()
@@ -294,19 +297,19 @@ export default function ProductForm({ product, onSaved, onCancel, routineItems, 
       )}
 
       {previewClashes.length > 0 && (
-        <div className="bg-amber-50 border-l-4 border-amber-500 rounded-r-xl p-4">
-          <p className="text-[13px] font-extrabold text-amber-900 flex items-center gap-1.5">
-            <span aria-hidden="true">⚠</span> Ingredient Clash Warning
+        <div className="space-y-3">
+          <p className="text-[13px] font-extrabold text-ink flex items-center gap-1.5 px-1">
+            <span aria-hidden="true">{previewTone === 'info' ? 'ⓘ' : '⚠'}</span>{' '}
+            {previewTone === 'info' ? 'Ingredient Info' : 'Ingredient Clash Warning'}
           </p>
-          {previewClashes.map(({ rule: r, matches }) => (
-            <p key={r.id} className="text-xs text-amber-800 leading-relaxed mt-1">
-              {r.severity && <b>{r.severity}: </b>}{r.message}
+          {sortBySeverity(previewClashes, (c) => c.rule).map(({ rule: r, matches }) => (
+            <SafetyCard key={r.id} rule={r}>
               {matches.length > 0 && (
-                <span className="block mt-0.5 font-semibold">
+                <p className="mt-1 text-xs font-semibold sev-text">
                   Conflicts with your existing routine: {matches.map((m) => `${m.name} (${m.periods.join(' & ')})`).join(', ')}
-                </span>
+                </p>
               )}
-            </p>
+            </SafetyCard>
           ))}
         </div>
       )}

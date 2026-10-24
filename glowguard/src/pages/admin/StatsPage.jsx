@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchAdminStats } from '../../api/services'
+import ExportButton from '../../components/ExportButton'
+import { buildAdminStatsExport } from '../../api/exportData'
 import {
   PageTitle, Loading, cardCls, btnGreen, btnOutline,
   UsersIcon, UserPlusIcon, PulseIcon, InboxIcon,
@@ -161,6 +163,14 @@ export default function StatsPage() {
             {d} days
           </button>
         ))}
+        <div className="ml-auto">
+          <ExportButton
+            className={btnOutline}
+            filename={`glowguard-statistics-${days}d`}
+            disabled={!stats}
+            getData={() => buildAdminStatsExport(stats, days)}
+          />
+        </div>
       </div>
 
       {error && <p className="text-sm font-semibold text-[#e0334c] mb-4">{error}</p>}

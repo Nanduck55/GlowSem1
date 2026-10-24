@@ -2,9 +2,12 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useApp } from '../context/AppContext'
 import { findClashes, skinTypeKey, reorderRoutine } from '../api/services'
+import { worstTone, sortBySeverity } from '../api/severityTone'
+import SafetyCard from '../components/SafetyCard'
 import { usePeriod } from '../api/usePeriod'
 import Modal from '../components/Modal'
 import ProductForm from '../components/ProductForm'
+import { DayRing, DayLegend, dayProgress, progressLabel } from '../components/DayProgress'
 import SchedulePicker, { weekdayIndex, summarizeSchedule } from '../components/SchedulePicker'
 
 const DAY_MS = 86400000
@@ -105,6 +108,7 @@ export default function Routine() {
 
   const [selected, setSelected] = useState(new Date())
   const [items, setItems] = useState([])
+  const [weekItems, setWeekItems] = useState({}) // dateKey -> routine items
   const [showForm, setShowForm] = useState(false)
   const [editProduct, setEditProduct] = useState(null)
   const [addPicker, setAddPicker] = useState(false)
@@ -158,9 +162,31 @@ export default function Routine() {
     try {
       const result = await loadRoutine(dateKey)
       setItems(Array.isArray(result) ? result : [])
+      loadWeek(Array.isArray(result) ? result : null)
     } catch (error) {
       console.error('Failed to load routine:', error)
       setItems([])
+    }
+  }
+
+  // Load every day of the shown week so the week strip can show progress.
+  const loadWeek = async (selectedResult) => {
+    try {
+      const entries = await Promise.all(
+        week.map(async (d) => {
+          const k = fmt(d)
+          if (k === dateKey && selectedResult) return [k, selectedResult]
+          try {
+            const r = await loadRoutine(k)
+            return [k, Array.isArray(r) ? r : []]
+          } catch {
+            return [k, []]
+          }
+        })
+      )
+      setWeekItems(Object.fromEntries(entries))
+    } catch (error) {
+      console.error('Failed to load week:', error)
     }
   }
 
@@ -851,40 +877,54 @@ export default function Routine() {
 ">
           {week.map((d) => {
             const isSel = fmt(d) === dateKey
+            const isToday = fmt(d) === fmt(new Date())
+            const prog = dayProgress(weekItems[fmt(d)], products)
 
             return (
               <button
                 key={fmt(d)}
                 type="button"
                 onClick={() => setSelected(d)}
+                aria-label={`${d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}, ${progressLabel(prog)}`}
                 className={`
+                  relative
                   w-full
                   min-w-0
-                  h-14
-                  sm:h-[72px]
-                  rounded-xl
+                  h-[76px]
+                  sm:h-[104px]
+                  rounded-2xl
                   border
                   text-center
                   transition-all
+                  flex flex-col items-center justify-center gap-0.5 sm:gap-1
                   ${isSel
-                    ? 'bg-white border-gg-500 shadow-md ring-1 ring-gg-300'
-                    : 'bg-white border-gg-200 hover:border-gg-400 hover:shadow-sm'
+                    ? 'bg-white border-gg-500 shadow-md ring-2 ring-gg-300'
+                    : prog.level === 'full'
+                      ? 'bg-white border-gg-400 hover:shadow-sm'
+                      : 'bg-white border-gg-200 hover:border-gg-400 hover:shadow-sm'
                   }
                 `}
               >
-                <div className="text-sm sm:text-base font-bold">
+                <div className="text-[10px] sm:text-xs uppercase tracking-wide text-muted">
+                  {d.toLocaleDateString('en-US', { weekday: 'short' })}
+                </div>
+
+                <div className="text-base sm:text-xl font-extrabold leading-none">
                   {d.getDate()}
                 </div>
 
-                <div className="text-[10px] sm:text-xs text-muted">
-                  {d.toLocaleDateString(
-                    'en-US',
-                    { weekday: 'short' }
-                  )}
-                </div>
+                <DayRing {...prog} />
+
+                {isToday && (
+                  <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 h-1.5 w-1.5 rounded-full bg-gg-500" aria-hidden="true" />
+                )}
               </button>
             )
           })}
+        </div>
+
+        <div className="-mt-3 mb-6">
+          <DayLegend />
         </div>
 
         {/* ==================================================
@@ -1324,36 +1364,16 @@ export default function Routine() {
 
             </div>
 
-            {/* SAFETY */}
+            {/* SAFETY: one card per rule - orange = Potential Conflict, coral = Caution, green = Info */}
             {clashes.length > 0 && (
-              <div className="
-                card
-                p-5
-                border-red-200
-                bg-red-50/60
-              ">
+              <div className="space-y-3">
 
-                <h4 className="
-                  font-extrabold
-                  mb-2
-                  text-red-700
-                ">
-                  ⚠ Routine Safety
+                <h4 className="font-extrabold px-1 text-ink">
+                  {worstTone(clashes) === 'info' ? 'ⓘ' : '⚠'} Routine Safety
                 </h4>
 
-                {clashes.map((r) => (
-                  <p
-                    key={r.id}
-                    className="
-                      text-xs
-                      text-red-700
-                      leading-relaxed
-                      mb-1
-                    "
-                  >
-                    {r.severity && <b>{r.severity}: </b>}
-                    {r.message}
-                  </p>
+                {sortBySeverity(clashes).map((r) => (
+                  <SafetyCard key={r.id} rule={r} />
                 ))}
 
               </div>
@@ -1374,7 +1394,7 @@ export default function Routine() {
             setAddPicker(false)
           }}
           title="Add a Product"
-          wide
+          xl
         >
 
           {/* MODAL TABS */}
@@ -1416,7 +1436,7 @@ export default function Routine() {
           {addPicker ? (
             <div className="
               space-y-2
-              max-h-72
+              max-h-[65vh] sm:max-h-[60vh]
               overflow-y-auto
             ">
 

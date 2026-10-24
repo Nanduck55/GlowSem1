@@ -383,499 +383,501 @@ function SkinQuiz() {
       localStorage.setItem('pending_skin_type', quizResult.type)
     }
 
-      setStep(5)
-      showVisual(resultImages[quizResult.type])
-    }
-
-    const intro = (
-      <div className="flex flex-col justify-center items-center text-center h-full">
-        <div className="text-[11px] uppercase tracking-widest font-extrabold text-gg-700 mb-3">Skin Profile Quiz</div>
-        <h3 className="text-2xl font-bold text-ink max-w-lg">Before we build your routine, let&apos;s get to know your skin.</h3>
-        <p className="text-muted leading-7 max-w-lg mt-3 mb-6">
-          Answer 5 quick questions about how your skin usually looks, feels, and reacts — you&apos;ll get an instant profile with ingredient suggestions.
-        </p>
-        <button type="button" onClick={startQuiz} className="btn-primary !px-7 !py-3.5">Take the quiz →</button>
-        <p className="text-[11px] text-muted mt-5 max-w-sm">This quiz is for general skincare guidance only and does not diagnose skin conditions.</p>
-      </div>
-    )
-
-    const question = step >= 0 && step < 5 ? questions[step] : null
-
-    const questionView = question && (
-      <div className="flex flex-col h-full">
-        <div
-          className="text-[11px] uppercase tracking-widest font-extrabold text-gg-700 mb-2"
-          aria-live="polite"
-        >
-          Question {step + 1} of 5
-        </div>
-        <div
-          className="h-2 rounded-full bg-gg-100 overflow-hidden mb-7"
-          role="progressbar"
-          aria-label={`Quiz progress: question ${step + 1} of 5`}
-          aria-valuemin="1"
-          aria-valuemax="5"
-          aria-valuenow={step + 1}
-        >
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-gg-400 to-gg-600 transition-all duration-500"
-            style={{ width: `${((step + 1) / 5) * 100}%` }}
-          />
-        </div>
-        <h3 className="text-xl font-bold text-ink leading-snug mb-5">{question.text}</h3>
-        <div className="flex flex-col gap-2.5">
-          {question.options.map((option) => {
-            const selected = answers[step] === option
-            return (
-              <button
-                type="button"
-                key={option}
-                onClick={() => selectAnswer(option)}
-                aria-pressed={selected}
-                className={`w-full text-left rounded-full px-5 py-3 border-[1.5px] transition-all ${selected
-                  ? 'border-gg-600 bg-gg-600 text-white font-semibold shadow-[0_6px_16px_rgba(22,163,74,.25)]'
-                  : 'border-gg-200 bg-white text-ink hover:border-gg-500 hover:bg-gg-50 hover:translate-x-1'
-                  }`}
-              >
-                {option}
-              </button>
-            )
-          })}
-        </div>
-        <div className="mt-auto pt-6 flex justify-between gap-3">
-          <button
-            type="button"
-            aria-label="Go to the previous quiz question"
-            onClick={() => {
-              if (step > 0) {
-                const previous = step - 1
-                setStep(previous)
-                showVisual(quizImages[previous])
-              }
-            }}
-            className={`btn-outline ${step === 0 ? 'invisible' : ''}`}
-          >
-            ← Back
-          </button>
-          <button
-            type="button"
-            onClick={finishQuiz}
-            disabled={!answers[step] || step !== 4}
-            className={`btn-primary ${step !== 4 ? 'opacity-0 pointer-events-none' : ''}`}
-          >
-            See Results ✨
-          </button>
-        </div>
-      </div>
-    )
-
-    const resultView = step === 5 && result && (
-      <div className="flex flex-col h-full">
-        <div className="text-[11px] uppercase tracking-[.14em] font-extrabold text-gg-600">Your Skin Profile</div>
-        <h3 className="text-3xl font-bold text-gg-900 mt-1 mb-2">{result.type}</h3>
-        <p className="text-muted leading-7">{result.desc}</p>
-        <div className="my-5 px-4 py-3 bg-gg-50 border-l-4 border-gg-500 rounded-r-xl text-gg-800 font-semibold text-sm">
-          🎯 Routine Goal: {result.goal}
-        </div>
-        <div className="text-sm font-bold text-muted mb-2">Ingredients you may want to explore</div>
-        <div className="flex flex-wrap gap-2 mb-6">
-          {result.chips.map((chip) => (
-            <span key={chip} className="px-3.5 py-1.5 rounded-full bg-gg-100 border border-gg-200 text-gg-800 text-xs font-semibold">{chip}</span>
-          ))}
-        </div>
-        {user ? (
-          <>
-            <Link to="/recommendations" className="btn-primary w-full">See Products For My Skin</Link>
-            <Link to="/account" className="btn-outline w-full mt-3">View My Account</Link>
-          </>
-        ) : (
-          <Link to="/auth" className="btn-primary w-full">Create My GlowGuard Account</Link>
-        )}
-        <button type="button" onClick={startQuiz} className="btn-outline w-full mt-3">Retake Quiz</button>
-        <p className="text-[11px] text-muted text-center mt-auto pt-5">This result is based on your quiz responses and is not a medical diagnosis.</p>
-      </div>
-    )
-
-    return (
-      <div className="max-w-5xl mx-auto mt-10 bg-white border border-gg-100 rounded-[28px] shadow-card overflow-hidden grid lg:grid-cols-[1fr_1.2fr] min-h-[500px]">
-        <div className="relative min-h-[260px] lg:min-h-full bg-gg-100 overflow-hidden">
-          <img
-            src={visual.src}
-            alt={visual.alt}
-            loading="lazy"
-            className={`absolute inset-0 w-full h-full object-cover transition-all duration-300 ${changing ? 'opacity-30 scale-[1.04]' : 'opacity-100 scale-[1.01]'}`}
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-gg-900/5 to-gg-900/45" />
-          {/* Deliberately no overlay badge on quiz images. */}
-        </div>
-        <div className="p-7 sm:p-10 min-h-[420px]">
-          {step === -1 && intro}
-          {questionView}
-          {resultView}
-        </div>
-      </div>
-    )
+    setStep(5)
+    showVisual(resultImages[quizResult.type])
   }
 
-  export default function Landing() {
-    const location = useLocation()
-    const { user } = useApp()
-    const [menuOpen, setMenuOpen] = useState(false)
-    const [activeNav, setActiveNav] = useState('home')
-    const [openFeature, setOpenFeature] = useState(null)
-    const [faqOpen, setFaqOpen] = useState(null)
+  const intro = (
+    <div className="flex flex-col justify-center items-center text-center h-full">
+      <div className="text-[11px] uppercase tracking-widest font-extrabold text-gg-700 mb-3">Skin Profile Quiz</div>
+      <h3 className="text-2xl font-bold text-ink max-w-lg">Before we build your routine, let&apos;s get to know your skin.</h3>
+      <p className="text-muted leading-7 max-w-lg mt-3 mb-6">
+        Answer 5 quick questions about how your skin usually looks, feels, and reacts — you&apos;ll get an instant profile with ingredient suggestions.
+      </p>
+      <button type="button" onClick={startQuiz} className="btn-primary !px-7 !py-3.5">Take the quiz →</button>
+      <p className="text-[11px] text-muted mt-5 max-w-sm">This quiz is for general skincare guidance only and does not diagnose skin conditions.</p>
+    </div>
+  )
 
-    useEffect(() => {
-      const sections = ['home', 'features', 'quiz', 'how-it-works', 'about']
-      const sectionElements = sections
-        .map((id) => document.getElementById(id))
-        .filter(Boolean)
+  const question = step >= 0 && step < 5 ? questions[step] : null
 
-      const onScroll = () => {
-        const current = sectionElements.reduce((found, el) => {
-          return window.scrollY >= el.offsetTop - 140 ? el.id : found
-        }, 'home')
+  const questionView = question && (
+    <div className="flex flex-col h-full">
+      <div
+        className="text-[11px] uppercase tracking-widest font-extrabold text-gg-700 mb-2"
+        aria-live="polite"
+      >
+        Question {step + 1} of 5
+      </div>
+      <div
+        className="h-2 rounded-full bg-gg-100 overflow-hidden mb-7"
+        role="progressbar"
+        aria-label={`Quiz progress: question ${step + 1} of 5`}
+        aria-valuemin="1"
+        aria-valuemax="5"
+        aria-valuenow={step + 1}
+      >
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-gg-400 to-gg-600 transition-all duration-500"
+          style={{ width: `${((step + 1) / 5) * 100}%` }}
+        />
+      </div>
+      <h3 className="text-xl font-bold text-ink leading-snug mb-5">{question.text}</h3>
+      <div className="flex flex-col gap-2.5">
+        {question.options.map((option) => {
+          const selected = answers[step] === option
+          return (
+            <button
+              type="button"
+              key={option}
+              onClick={() => selectAnswer(option)}
+              aria-pressed={selected}
+              className={`w-full text-left rounded-full px-5 py-3 border-[1.5px] transition-all ${selected
+                ? 'border-gg-600 bg-gg-600 text-white font-semibold shadow-[0_6px_16px_rgba(22,163,74,.25)]'
+                : 'border-gg-200 bg-white text-ink hover:border-gg-500 hover:bg-gg-50 hover:translate-x-1'
+                }`}
+            >
+              {option}
+            </button>
+          )
+        })}
+      </div>
+      <div className="mt-auto pt-6 flex justify-between gap-3">
+        <button
+          type="button"
+          aria-label="Go to the previous quiz question"
+          onClick={() => {
+            if (step > 0) {
+              const previous = step - 1
+              setStep(previous)
+              showVisual(quizImages[previous])
+            }
+          }}
+          className={`btn-outline ${step === 0 ? 'invisible' : ''}`}
+        >
+          ← Back
+        </button>
+        <button
+          type="button"
+          onClick={finishQuiz}
+          disabled={!answers[step] || step !== 4}
+          className={`btn-primary ${step !== 4 ? 'opacity-0 pointer-events-none' : ''}`}
+        >
+          See Results ✨
+        </button>
+      </div>
+    </div>
+  )
 
-        setActiveNav((previous) => (previous === current ? previous : current))
-      }
+  const resultView = step === 5 && result && (
+    <div className="flex flex-col h-full">
+      <div className="text-[11px] uppercase tracking-[.14em] font-extrabold text-gg-600">Your Skin Profile</div>
+      <h3 className="text-3xl font-bold text-gg-900 mt-1 mb-2">{result.type}</h3>
+      <p className="text-muted leading-7">{result.desc}</p>
+      <div className="my-5 px-4 py-3 bg-gg-50 border-l-4 border-gg-500 rounded-r-xl text-gg-800 font-semibold text-sm">
+        🎯 Routine Goal: {result.goal}
+      </div>
+      <div className="text-sm font-bold text-muted mb-2">Ingredients you may want to explore</div>
+      <div className="flex flex-wrap gap-2 mb-6">
+        {result.chips.map((chip) => (
+          <span key={chip} className="px-3.5 py-1.5 rounded-full bg-gg-100 border border-gg-200 text-gg-800 text-xs font-semibold">{chip}</span>
+        ))}
+      </div>
+      {user ? (
+        <>
+          <Link to="/recommendations" className="btn-primary w-full">See Products For My Skin</Link>
+          <Link to="/account" className="btn-outline w-full mt-3">View My Account</Link>
+        </>
+      ) : (
+        <Link to="/auth?mode=register" className="btn-primary w-full">
+          Create My GlowGuard Account
+        </Link>
+      )}
+      <button type="button" onClick={startQuiz} className="btn-outline w-full mt-3">Retake Quiz</button>
+      <p className="text-[11px] text-muted text-center mt-auto pt-5">This result is based on your quiz responses and is not a medical diagnosis.</p>
+    </div>
+  )
 
-      window.addEventListener('scroll', onScroll, { passive: true })
-      onScroll()
-      return () => window.removeEventListener('scroll', onScroll)
-    }, [])
+  return (
+    <div className="max-w-5xl mx-auto mt-10 bg-white border border-gg-100 rounded-[28px] shadow-card overflow-hidden grid lg:grid-cols-[1fr_1.2fr] min-h-[500px]">
+      <div className="relative min-h-[260px] lg:min-h-full bg-gg-100 overflow-hidden">
+        <img
+          src={visual.src}
+          alt={visual.alt}
+          loading="lazy"
+          className={`absolute inset-0 w-full h-full object-cover transition-all duration-300 ${changing ? 'opacity-30 scale-[1.04]' : 'opacity-100 scale-[1.01]'}`}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-gg-900/5 to-gg-900/45" />
+        {/* Deliberately no overlay badge on quiz images. */}
+      </div>
+      <div className="p-7 sm:p-10 min-h-[420px]">
+        {step === -1 && intro}
+        {questionView}
+        {resultView}
+      </div>
+    </div>
+  )
+}
 
-    useEffect(() => {
-      const onKeyDown = (event) => {
-        if (event.key === 'Escape') setMenuOpen(false)
-      }
+export default function Landing() {
+  const location = useLocation()
+  const { user } = useApp()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [activeNav, setActiveNav] = useState('home')
+  const [openFeature, setOpenFeature] = useState(null)
+  const [faqOpen, setFaqOpen] = useState(null)
 
-      document.addEventListener('keydown', onKeyDown)
-      const previousOverflow = document.body.style.overflow
-      document.body.style.overflow = menuOpen ? 'hidden' : previousOverflow
+  useEffect(() => {
+    const sections = ['home', 'features', 'quiz', 'how-it-works', 'about']
+    const sectionElements = sections
+      .map((id) => document.getElementById(id))
+      .filter(Boolean)
 
-      return () => {
-        document.removeEventListener('keydown', onKeyDown)
-        document.body.style.overflow = previousOverflow
-      }
-    }, [menuOpen])
+    const onScroll = () => {
+      const current = sectionElements.reduce((found, el) => {
+        return window.scrollY >= el.offsetTop - 140 ? el.id : found
+      }, 'home')
 
-    const goTo = (id) => {
-      setMenuOpen(false)
-
-      const element = document.getElementById(id)
-      if (!element) return
-
-      const navOffset = 100
-      const top = element.getBoundingClientRect().top + window.scrollY - navOffset
-
-      window.scrollTo({ top, behavior: 'smooth' })
+      setActiveNav((previous) => (previous === current ? previous : current))
     }
 
-    // Coming from My Account -> "Retake Skin Profile Quiz": jump straight to the quiz.
-    useEffect(() => {
-      const target = location.state?.scrollTo
-      if (!target) return undefined
+    window.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
-      const timer = window.setTimeout(() => goTo(target), 150)
-      return () => window.clearTimeout(timer)
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [location.state])
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setMenuOpen(false)
+    }
 
-    return (
-      <div className="bg-gradient-to-br from-cream to-gg-50 text-ink overflow-x-hidden">
-        {/* Landing-only navbar (with Log In / Get Started): only shown to
+    document.addEventListener('keydown', onKeyDown)
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = menuOpen ? 'hidden' : previousOverflow
+
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.body.style.overflow = previousOverflow
+    }
+  }, [menuOpen])
+
+  const goTo = (id) => {
+    setMenuOpen(false)
+
+    const element = document.getElementById(id)
+    if (!element) return
+
+    const navOffset = 100
+    const top = element.getBoundingClientRect().top + window.scrollY - navOffset
+
+    window.scrollTo({ top, behavior: 'smooth' })
+  }
+
+  // Coming from My Account -> "Retake Skin Profile Quiz": jump straight to the quiz.
+  useEffect(() => {
+    const target = location.state?.scrollTo
+    if (!target) return undefined
+
+    const timer = window.setTimeout(() => goTo(target), 150)
+    return () => window.clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state])
+
+  return (
+    <div className="bg-gradient-to-br from-cream to-gg-50 text-ink overflow-x-hidden">
+      {/* Landing-only navbar (with Log In / Get Started): only shown to
           logged-out visitors. Logged-in users get the normal app Navbar
           instead — see the showNavbar logic in App.jsx. */}
-        {!user && (
-          <nav aria-label="Main navigation" className="fixed top-5 left-1/2 -translate-x-1/2 z-[100] w-[calc(100%-2rem)] max-w-[1325px] bg-[#f0fdf4] backdrop-blur-xl border border-white/70 rounded-[22px] shadow-[0_10px_35px_rgba(32,65,43,.14)]">
-            <div className="h-[76px] px-4 sm:px-6 lg:px-7 flex items-center justify-between">
-              <button type="button" onClick={() => goTo('home')} className="flex items-center gap-2.5 text-ink text-xl sm:text-2xl font-extrabold focus:outline-none focus-visible:ring-2 focus-visible:ring-gg-500 focus-visible:ring-offset-2 rounded-xl">
-                <img src="/Icon1.png" alt="GlowGuard logo" className="w-10 h-10 rounded-xl object-contain" />
-                <Wordmark tone="light" className="text-[1.7rem] sm:text-[2rem]" />
-              </button>
+      {!user && (
+        <nav aria-label="Main navigation" className="fixed top-5 left-1/2 -translate-x-1/2 z-[100] w-[calc(100%-2rem)] max-w-[1325px] bg-[#f0fdf4] backdrop-blur-xl border border-white/70 rounded-[22px] shadow-[0_10px_35px_rgba(32,65,43,.14)]">
+          <div className="h-[76px] px-4 sm:px-6 lg:px-7 flex items-center justify-between">
+            <button type="button" onClick={() => goTo('home')} className="flex items-center gap-2.5 text-ink text-xl sm:text-2xl font-extrabold focus:outline-none focus-visible:ring-2 focus-visible:ring-gg-500 focus-visible:ring-offset-2 rounded-xl">
+              <img src="/Icon1.png" alt="GlowGuard logo" className="w-10 h-10 rounded-xl object-contain" />
+              <Wordmark tone="light" className="text-[1.7rem] sm:text-[2rem]" />
+            </button>
 
-              <div className={`${menuOpen ? 'flex' : 'hidden'} md:flex absolute md:static top-[76px] left-0 right-0 md:items-center flex-col md:flex-row bg-white md:bg-transparent border-b md:border-0 border-gg-100 rounded-b-[22px] px-4 md:px-0 pb-4 md:pb-0 shadow-xl md:shadow-none`}>
-                <div className="flex flex-col md:flex-row md:items-center gap-1 w-full md:w-auto">
-                  {navigationItems.map(([id, label]) => (
-                    <button
-                      type="button"
-                      key={id}
-                      onClick={() => goTo(id)}
-                      aria-current={activeNav === id ? 'page' : undefined}
-                      className={`px-4 py-3 md:py-3 rounded-xl text-sm font-semibold text-left md:text-center transition focus:outline-none focus-visible:ring-2 focus-visible:ring-gg-500 focus-visible:ring-offset-2 ${activeNav === id ? 'text-gg-700 bg-gg-50' : 'text-muted hover:text-gg-700 hover:bg-gg-50'
-                        }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                  <div className="flex flex-col sm:flex-row gap-2 md:ml-3 pt-2 md:pt-0 border-t md:border-0 border-gg-100">
-                    <Link to="/auth" onClick={() => setMenuOpen(false)} className="px-4 py-2.5 text-sm font-bold text-gg-700 rounded-lg hover:bg-gg-50 text-center">Log In</Link>
-                    <Link
-                      to="/auth"
-                      className="px-5 py-2.5 text-sm font-bold text-white rounded-full bg-gradient-to-br from-gg-600 to-gg-500 shadow-[0_6px_16px_rgba(34,197,94,.25)] hover:-translate-y-0.5 transition text-center"
-                    >
-                      Get Started
-                    </Link>              </div>
-                </div>
+            <div className={`${menuOpen ? 'flex' : 'hidden'} md:flex absolute md:static top-[76px] left-0 right-0 md:items-center flex-col md:flex-row bg-white md:bg-transparent border-b md:border-0 border-gg-100 rounded-b-[22px] px-4 md:px-0 pb-4 md:pb-0 shadow-xl md:shadow-none`}>
+              <div className="flex flex-col md:flex-row md:items-center gap-1 w-full md:w-auto">
+                {navigationItems.map(([id, label]) => (
+                  <button
+                    type="button"
+                    key={id}
+                    onClick={() => goTo(id)}
+                    aria-current={activeNav === id ? 'page' : undefined}
+                    className={`px-4 py-3 md:py-3 rounded-xl text-sm font-semibold text-left md:text-center transition focus:outline-none focus-visible:ring-2 focus-visible:ring-gg-500 focus-visible:ring-offset-2 ${activeNav === id ? 'text-gg-700 bg-gg-50' : 'text-muted hover:text-gg-700 hover:bg-gg-50'
+                      }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+                <div className="flex flex-col sm:flex-row gap-2 md:ml-3 pt-2 md:pt-0 border-t md:border-0 border-gg-100">
+                  <Link to="/auth" onClick={() => setMenuOpen(false)} className="px-4 py-2.5 text-sm font-bold text-gg-700 rounded-lg hover:bg-gg-50 text-center">Log In</Link>
+                  <Link
+                    to="/auth"
+                    className="px-5 py-2.5 text-sm font-bold text-white rounded-full bg-gradient-to-br from-gg-600 to-gg-500 shadow-[0_6px_16px_rgba(34,197,94,.25)] hover:-translate-y-0.5 transition text-center"
+                  >
+                    Get Started
+                  </Link>              </div>
               </div>
-
-              <button
-                type="button"
-                onClick={() => setMenuOpen((open) => !open)}
-                aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-                aria-expanded={menuOpen}
-                className="md:hidden w-10 h-10 grid place-items-center rounded-xl border border-[#cfe5d5] bg-[#dff3e5] text-gg-800 text-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-gg-500 focus-visible:ring-offset-2"
-              >
-                {menuOpen ? '×' : '☰'}
-              </button>
             </div>
-          </nav>
-        )}
 
-        <section
-          id="home"
-          className={`relative min-h-screen grid place-items-center overflow-hidden px-5 pb-20 ${user ? 'pt-14' : 'pt-32'}`}
+            <button
+              type="button"
+              onClick={() => setMenuOpen((open) => !open)}
+              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={menuOpen}
+              className="md:hidden w-10 h-10 grid place-items-center rounded-xl border border-[#cfe5d5] bg-[#dff3e5] text-gg-800 text-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-gg-500 focus-visible:ring-offset-2"
+            >
+              {menuOpen ? '×' : '☰'}
+            </button>
+          </div>
+        </nav>
+      )}
+
+      <section
+        id="home"
+        className={`relative min-h-screen grid place-items-center overflow-hidden px-5 pb-20 ${user ? 'pt-14' : 'pt-32'}`}
+      >
+        {/* Desktop background */}
+        <div
+          className="absolute inset-0 hidden sm:block bg-center bg-cover bg-fixed"
+          style={{
+            backgroundImage: `url("${heroBg}")`,
+          }}
+          aria-hidden="true"
+        />
+
+        {/* Mobile background */}
+        <div
+          className="absolute inset-0 block sm:hidden bg-center bg-cover"
+          style={{
+            backgroundImage: `url("${heroBgMobile}")`,
+          }}
+          aria-hidden="true"
+        />
+
+        {/* Hero content */}
+        <div className="relative z-10 w-full max-w-5xl text-center text-black">
+
+          <h1 className="font-serif italic font-semibold text-[clamp(3rem,7vw,5.4rem)] leading-[0.98] tracking-tight mb-6">
+            Protection for your
+            <span className="block text-[#060606]">Complexion.</span>
+          </h1>
+
+          <p className="max-w-3xl mx-auto text-black/95 font-bold text-base sm:text-lg leading-8 [text-shadow:0_5px_8px_rgba(255,255,255,0.8)]">
+            Organize your products, build personalized AM/PM routines, track your
+            progress, and check ingredient conflicts — all in one simple skincare
+            companion.
+          </p>
+
+          <div className="flex flex-wrap justify-center gap-4 mt-9">
+            <Link to="/auth" className="btn-primary !px-9 !py-3.5 shadow-lg">
+              Get Started
+            </Link>
+
+            <button
+              type="button"
+              onClick={() => goTo('quiz')}
+              className="btn !px-9 !py-3.5 bg-white text-gg-800 hover:bg-gg-50"
+            >
+              Take the Skin Quiz
+            </button>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => goTo('features')}
+          className="absolute bottom-7 left-1/2 -translate-x-1/2 text-white/75 text-2xl animate-bounce z-10"
+          aria-label="Scroll to features"
         >
-          {/* Desktop background */}
-          <div
-            className="absolute inset-0 hidden sm:block bg-center bg-cover bg-fixed"
-            style={{
-              backgroundImage: `url("${heroBg}")`,
-            }}
-            aria-hidden="true"
-          />
+          ⌄
+        </button>
+      </section>
 
-          {/* Mobile background */}
-          <div
-            className="absolute inset-0 block sm:hidden bg-center bg-cover"
-            style={{
-              backgroundImage: `url("${heroBgMobile}")`,
-            }}
-            aria-hidden="true"
-          />
+      <section id="features" className="py-20 sm:py-24 px-5 sm:px-6 bg-white border-y border-gg-100">
+        <SectionHeading
+          eyebrow="Everything in one place"
+          title="Simple tools for a smarter skincare routine."
+          subtitle="Organize your products, build your routine, check ingredient safety, and keep track of your progress."
+        />
+        <div className="max-w-5xl mx-auto grid md:grid-cols-2 lg:grid-cols-4 gap-5 mt-10">
+          {features.map((feature, index) => (
+            <FeatureCard
+              key={feature.title}
+              feature={feature}
+              index={index}
+              openFeature={openFeature}
+              onToggle={setOpenFeature}
+            />
+          ))}
+        </div>
+      </section>
 
-          {/* Hero content */}
-          <div className="relative z-10 w-full max-w-5xl text-center text-black">
+      <section id="quiz" className="py-20 sm:py-24 px-5 sm:px-6 bg-gradient-to-br from-gg-50 to-gg-100 border-y border-gg-100">
+        <SectionHeading eyebrow="Know your skin first" title="Take the 60-second skin quiz." subtitle="Answer 5 quick questions and get an instant skin profile with ingredient suggestions — right here, no sign-up needed." />
+        <SkinQuiz />
+      </section>
 
-            <h1 className="font-serif italic font-semibold text-[clamp(3rem,7vw,5.4rem)] leading-[0.98] tracking-tight mb-6">
-              Protection for your
-              <span className="block text-[#060606]">Complexion.</span>
-            </h1>
+      <section id="how-it-works" className="px-5 sm:px-6 py-20 sm:py-24 bg-white border-b border-gg-100">
+        <SectionHeading eyebrow="Simple workflow" title="From shelf to routine in three steps." />
+        <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-5 mt-10">
+          {workflowSteps.map(([image, number, title, desc]) => (
+            <div key={number} className="bg-cream border border-gg-100 rounded-2xl p-6 text-center hover:-translate-y-1 hover:shadow-card transition">
+              <img src={image} alt={title} loading="lazy" className="w-full h-40 object-cover rounded-xl mb-5" />
+              <div className="w-9 h-9 rounded-full mx-auto mb-3 grid place-items-center bg-gg-100 text-gg-700 font-extrabold text-sm">{number}</div>
+              <h3 className="font-bold text-gg-800 mb-2">{title}</h3>
+              <p className="text-muted text-sm leading-6">{desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
 
-            <p className="max-w-3xl mx-auto text-black/95 font-bold text-base sm:text-lg leading-8 [text-shadow:0_5px_8px_rgba(255,255,255,0.8)]">
-              Organize your products, build personalized AM/PM routines, track your
-              progress, and check ingredient conflicts — all in one simple skincare
-              companion.
-            </p>
+      <section id="faq" className="py-20 sm:py-24 px-5 sm:px-6 bg-gg-50 border-t border-gg-100">
+        <SectionHeading eyebrow="Questions, answered" title="Frequently asked questions" />
+        <div className="max-w-3xl mx-auto mt-9">
+          {faqs.map(([question, answer], index) => (
+            <FaqItem
+              key={question}
+              question={question}
+              answer={answer}
+              index={index}
+              openIndex={faqOpen}
+              onToggle={setFaqOpen}
+            />
+          ))}
+        </div>
+      </section>
 
-            <div className="flex flex-wrap justify-center gap-4 mt-9">
-              <Link to="/auth" className="btn-primary !px-9 !py-3.5 shadow-lg">
-                Get Started
-              </Link>
+      <section id="about" className="px-5 sm:px-6 py-20 sm:py-24 bg-white">
+        <div className="max-w-5xl mx-auto grid lg:grid-cols-2 gap-10 items-center">
+          <div className="grid grid-cols-2 gap-4">
+            <img
+              loading="lazy"
+              src={botanicalImage}
+              alt="Green botanical texture"
+              className="w-full h-56 object-cover rounded-2xl shadow-card translate-y-4"
+            />
+
+            <img
+              loading="lazy"
+              src={skincareImage}
+              alt="Natural skincare flat lay"
+              className="w-full h-56 object-cover rounded-2xl shadow-card"
+            />
+          </div>
+          <div>
+            <p className="uppercase tracking-[.15em] text-gg-600 text-[11px] font-extrabold mb-2">About GlowGuard</p>
+            <h2 className="font-serif italic font-semibold text-3xl sm:text-4xl text-gg-900">A calmer way to manage skincare.</h2>
+            <p className="text-muted leading-7 mt-4">GlowGuard is a skincare management and chemical-safety application designed to organize products, build routines, and surface ingredient safety rules in one place.</p>
+            <p className="text-muted leading-7 mt-3">Your shelf, routines, and progress are saved to your account, so they're there whenever you sign back in.</p>
+            <div className="flex flex-wrap gap-2.5 mt-5">
+              {aboutHighlights.map((point) => (
+                <span key={point} className="px-3.5 py-2 rounded-full border border-gg-200 bg-gg-50 text-gg-800 text-xs font-semibold">{point}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="relative overflow-hidden px-5 py-20 text-center text-white bg-gradient-to-br from-gg-900 to-gg-700">
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-[.12]"
+          style={{
+            backgroundImage: `url("${ctaBg}")`,
+          }}
+        />
+
+        <div className="relative">
+          <h2 className="font-serif italic font-semibold text-3xl sm:text-4xl">
+            Ready to build your routine?
+          </h2>
+
+          <p className="max-w-xl mx-auto mt-3 mb-7 text-gg-200 leading-7">
+            Start organizing your skincare products and create a routine that is easy to follow every day.
+          </p>
+
+          <Link
+            to="/auth"
+            className="btn !px-8 !py-3.5 bg-white text-gg-800 hover:bg-gg-50"
+          >
+            Create Your GlowGuard
+          </Link>
+        </div>
+      </section>
+
+      <footer className="bg-gg-900 text-white relative">
+        <div className="w-[calc(100%-2rem)] max-w-[1325px] mx-auto px-4 sm:px-6 lg:px-7 pt-14 sm:pt-16 pb-8">
+          <div className="grid gap-10 md:grid-cols-[1.15fr_.85fr_1fr] items-start">
+            <div className="text-center md:text-left">
+              <div className="inline-flex items-center justify-center md:justify-start gap-2.5">
+                <img src="/Icon1.png" alt="GlowGuard logo" className="w-10 h-10 rounded-xl ring-white/10 object-contain" />
+                <Wordmark tone="dark" className="text-[1.9rem]" />
+              </div>
+              <p className="text-gg-300 text-sm mt-3 max-w-xs mx-auto md:mx-0 leading-6">
+                Skincare. Safe. Simple.
+              </p>
+              <p className="text-gg-200 text-xs mt-4 max-w-sm mx-auto md:mx-0 leading-5">
+                Organize your products, build your routine, and keep your skincare journey simple.
+              </p>
+            </div>
+
+            <div className="text-center md:text-left">
+              <p className="font-bold text-sm tracking-wide mb-4">Quick Links</p>
+              <div className="flex flex-col items-center md:items-start gap-2.5 text-sm text-gg-300">
+                <button
+                  type="button"
+                  onClick={() => goTo('how-it-works')}
+                  className="hover:text-white hover:translate-x-0.5 transition"
+                >
+                  How it works
+                </button>
+                <Link to="/auth" className="hover:text-white hover:translate-x-0.5 transition">
+                  Log In
+                </Link>
+              </div>
+            </div>
+
+            <div className="text-center md:text-left">
+              <p className="font-bold text-sm tracking-wide mb-2">Ready to understand your skin?</p>
+              <p className="text-gg-300 text-sm leading-6 mb-5 max-w-sm mx-auto md:mx-0">
+                Get a personalized starting point with the GlowGuard skin profile quiz.
+              </p>
 
               <button
                 type="button"
                 onClick={() => goTo('quiz')}
-                className="btn !px-9 !py-3.5 bg-white text-gg-800 hover:bg-gg-50"
+                className="inline-flex items-center justify-center px-5 py-2.5 rounded-full text-sm font-semibold bg-gg-700 hover:bg-gg-600 hover:-translate-y-0.5 shadow-[0_8px_20px_rgba(0,0,0,.16)] transition"
               >
-                Take the Skin Quiz
+                Take the Skin Profile Quiz
+                <span className="ml-2" aria-hidden="true">→</span>
               </button>
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => goTo('features')}
-            className="absolute bottom-7 left-1/2 -translate-x-1/2 text-white/75 text-2xl animate-bounce z-10"
-            aria-label="Scroll to features"
-          >
-            ⌄
-          </button>
-        </section>
-
-        <section id="features" className="py-20 sm:py-24 px-5 sm:px-6 bg-white border-y border-gg-100">
-          <SectionHeading
-            eyebrow="Everything in one place"
-            title="Simple tools for a smarter skincare routine."
-            subtitle="Organize your products, build your routine, check ingredient safety, and keep track of your progress."
-          />
-          <div className="max-w-5xl mx-auto grid md:grid-cols-2 lg:grid-cols-4 gap-5 mt-10">
-            {features.map((feature, index) => (
-              <FeatureCard
-                key={feature.title}
-                feature={feature}
-                index={index}
-                openFeature={openFeature}
-                onToggle={setOpenFeature}
-              />
-            ))}
-          </div>
-        </section>
-
-        <section id="quiz" className="py-20 sm:py-24 px-5 sm:px-6 bg-gradient-to-br from-gg-50 to-gg-100 border-y border-gg-100">
-          <SectionHeading eyebrow="Know your skin first" title="Take the 60-second skin quiz." subtitle="Answer 5 quick questions and get an instant skin profile with ingredient suggestions — right here, no sign-up needed." />
-          <SkinQuiz />
-        </section>
-
-        <section id="how-it-works" className="px-5 sm:px-6 py-20 sm:py-24 bg-white border-b border-gg-100">
-          <SectionHeading eyebrow="Simple workflow" title="From shelf to routine in three steps." />
-          <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-5 mt-10">
-            {workflowSteps.map(([image, number, title, desc]) => (
-              <div key={number} className="bg-cream border border-gg-100 rounded-2xl p-6 text-center hover:-translate-y-1 hover:shadow-card transition">
-                <img src={image} alt={title} loading="lazy" className="w-full h-40 object-cover rounded-xl mb-5" />
-                <div className="w-9 h-9 rounded-full mx-auto mb-3 grid place-items-center bg-gg-100 text-gg-700 font-extrabold text-sm">{number}</div>
-                <h3 className="font-bold text-gg-800 mb-2">{title}</h3>
-                <p className="text-muted text-sm leading-6">{desc}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section id="faq" className="py-20 sm:py-24 px-5 sm:px-6 bg-gg-50 border-t border-gg-100">
-          <SectionHeading eyebrow="Questions, answered" title="Frequently asked questions" />
-          <div className="max-w-3xl mx-auto mt-9">
-            {faqs.map(([question, answer], index) => (
-              <FaqItem
-                key={question}
-                question={question}
-                answer={answer}
-                index={index}
-                openIndex={faqOpen}
-                onToggle={setFaqOpen}
-              />
-            ))}
-          </div>
-        </section>
-
-        <section id="about" className="px-5 sm:px-6 py-20 sm:py-24 bg-white">
-          <div className="max-w-5xl mx-auto grid lg:grid-cols-2 gap-10 items-center">
-            <div className="grid grid-cols-2 gap-4">
-              <img
-                loading="lazy"
-                src={botanicalImage}
-                alt="Green botanical texture"
-                className="w-full h-56 object-cover rounded-2xl shadow-card translate-y-4"
-              />
-
-              <img
-                loading="lazy"
-                src={skincareImage}
-                alt="Natural skincare flat lay"
-                className="w-full h-56 object-cover rounded-2xl shadow-card"
-              />
-            </div>
-            <div>
-              <p className="uppercase tracking-[.15em] text-gg-600 text-[11px] font-extrabold mb-2">About GlowGuard</p>
-              <h2 className="font-serif italic font-semibold text-3xl sm:text-4xl text-gg-900">A calmer way to manage skincare.</h2>
-              <p className="text-muted leading-7 mt-4">GlowGuard is a skincare management and chemical-safety application designed to organize products, build routines, and surface ingredient safety rules in one place.</p>
-              <p className="text-muted leading-7 mt-3">Your shelf, routines, and progress are saved to your account, so they're there whenever you sign back in.</p>
-              <div className="flex flex-wrap gap-2.5 mt-5">
-                {aboutHighlights.map((point) => (
-                  <span key={point} className="px-3.5 py-2 rounded-full border border-gg-200 bg-gg-50 text-gg-800 text-xs font-semibold">{point}</span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="relative overflow-hidden px-5 py-20 text-center text-white bg-gradient-to-br from-gg-900 to-gg-700">
-          <div
-            className="absolute inset-0 bg-cover bg-center opacity-[.12]"
-            style={{
-              backgroundImage: `url("${ctaBg}")`,
-            }}
-          />
-
-          <div className="relative">
-            <h2 className="font-serif italic font-semibold text-3xl sm:text-4xl">
-              Ready to build your routine?
-            </h2>
-
-            <p className="max-w-xl mx-auto mt-3 mb-7 text-gg-200 leading-7">
-              Start organizing your skincare products and create a routine that is easy to follow every day.
+          <div className="mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+            <p className="text-gg-300 text-xs">
+              Made with care · <b className="text-gg-300">GlowGuard</b> © 2026
             </p>
-
-            <Link
-              to="/auth"
-              className="btn !px-8 !py-3.5 bg-white text-gg-800 hover:bg-gg-50"
-            >
-              Create Your GlowGuard
-            </Link>
+            <p className="text-gg-300 text-[11px]">
+              Skincare guidance, not medical advice
+            </p>
           </div>
-        </section>
+        </div>
+      </footer>
 
-        <footer className="bg-gg-900 text-white relative">
-          <div className="w-[calc(100%-2rem)] max-w-[1325px] mx-auto px-4 sm:px-6 lg:px-7 pt-14 sm:pt-16 pb-8">
-            <div className="grid gap-10 md:grid-cols-[1.15fr_.85fr_1fr] items-start">
-              <div className="text-center md:text-left">
-                <div className="inline-flex items-center justify-center md:justify-start gap-2.5">
-                  <img src="/Icon1.png" alt="GlowGuard logo" className="w-10 h-10 rounded-xl ring-white/10 object-contain" />
-                  <Wordmark tone="dark" className="text-[1.9rem]" />
-                </div>
-                <p className="text-gg-300 text-sm mt-3 max-w-xs mx-auto md:mx-0 leading-6">
-                  Skincare. Safe. Simple.
-                </p>
-                <p className="text-gg-200 text-xs mt-4 max-w-sm mx-auto md:mx-0 leading-5">
-                  Organize your products, build your routine, and keep your skincare journey simple.
-                </p>
-              </div>
-
-              <div className="text-center md:text-left">
-                <p className="font-bold text-sm tracking-wide mb-4">Quick Links</p>
-                <div className="flex flex-col items-center md:items-start gap-2.5 text-sm text-gg-300">
-                  <button
-                    type="button"
-                    onClick={() => goTo('how-it-works')}
-                    className="hover:text-white hover:translate-x-0.5 transition"
-                  >
-                    How it works
-                  </button>
-                  <Link to="/auth" className="hover:text-white hover:translate-x-0.5 transition">
-                    Log In
-                  </Link>
-                </div>
-              </div>
-
-              <div className="text-center md:text-left">
-                <p className="font-bold text-sm tracking-wide mb-2">Ready to understand your skin?</p>
-                <p className="text-gg-300 text-sm leading-6 mb-5 max-w-sm mx-auto md:mx-0">
-                  Get a personalized starting point with the GlowGuard skin profile quiz.
-                </p>
-
-                <button
-                  type="button"
-                  onClick={() => goTo('quiz')}
-                  className="inline-flex items-center justify-center px-5 py-2.5 rounded-full text-sm font-semibold bg-gg-700 hover:bg-gg-600 hover:-translate-y-0.5 shadow-[0_8px_20px_rgba(0,0,0,.16)] transition"
-                >
-                  Take the Skin Profile Quiz
-                  <span className="ml-2" aria-hidden="true">→</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
-              <p className="text-gg-300 text-xs">
-                Made with care · <b className="text-gg-300">GlowGuard</b> © 2026
-              </p>
-              <p className="text-gg-300 text-[11px]">
-                Skincare guidance, not medical advice
-              </p>
-            </div>
-          </div>
-        </footer>
-
-        <button
-          type="button"
-          onClick={() => goTo('home')}
-          aria-label="Back to top"
-          className="fixed right-5 bottom-5 sm:right-7 sm:bottom-7 z-[120] w-12 h-12 sm:w-13 sm:h-13 grid place-items-center rounded-full bg-gg-800 text-white border border-white/15 shadow-[0_12px_30px_rgba(20,60,35,.28)] hover:bg-gg-700 hover:-translate-y-1 hover:shadow-[0_16px_34px_rgba(20,60,35,.34)] active:translate-y-0 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-gg-900"
-          title="Back to top"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5" aria-hidden="true">
-            <path d="M12 19V5" strokeLinecap="round" />
-            <path d="m6 11 6-6 6 6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-      </div>
-    )
-  }
+      <button
+        type="button"
+        onClick={() => goTo('home')}
+        aria-label="Back to top"
+        className="fixed right-5 bottom-5 sm:right-7 sm:bottom-7 z-[120] w-12 h-12 sm:w-13 sm:h-13 grid place-items-center rounded-full bg-gg-800 text-white border border-white/15 shadow-[0_12px_30px_rgba(20,60,35,.28)] hover:bg-gg-700 hover:-translate-y-1 hover:shadow-[0_16px_34px_rgba(20,60,35,.34)] active:translate-y-0 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-gg-900"
+        title="Back to top"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5" aria-hidden="true">
+          <path d="M12 19V5" strokeLinecap="round" />
+          <path d="m6 11 6-6 6 6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+    </div>
+  )
+}

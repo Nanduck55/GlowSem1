@@ -21,12 +21,13 @@ export default function CurationForm({ mode }) {
   // Initialise once the recommendation is available (it may still be loading on a hard refresh).
   if (form === null) {
     if (!editing) {
-      setForm({ name: '', category: '', skinType: '', starIngredient: '', description: '', visible: true })
+      setForm({ name: '', category: '', skinType: '', timeOfDay: 'Both', starIngredient: '', description: '', visible: true })
     } else if (existing) {
       setForm({
         name: existing.name,
         category: existing.category,
         skinType: existing.skinType,
+        timeOfDay: ['AM', 'PM', 'Both'].includes(existing.timeOfDay) ? existing.timeOfDay : 'Both',
         starIngredient: existing.starIngredient ?? '',
         description: existing.description ?? '',
         visible: existing.visible !== false,
@@ -92,6 +93,26 @@ export default function CurationForm({ mode }) {
               <option value="" disabled>Skin Type</option>
               {SKIN_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
+          </div>
+
+          <div>
+            <p className="text-base sm:text-lg font-medium mb-1">Best Time to Use</p>
+            <div className="flex gap-2" role="radiogroup" aria-label="Best time to use">
+              {[['AM', 'AM'], ['PM', 'PM'], ['Both', 'Both']].map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  role="radio"
+                  aria-checked={form.timeOfDay === value}
+                  onClick={() => set('timeOfDay', value)}
+                  className={`rounded-md px-4 py-1.5 text-xs font-semibold border transition ${form.timeOfDay === value
+                    ? 'bg-[#4fb477] border-[#4fb477] text-white'
+                    : 'bg-white border-[#b9c7bd] text-[#1f2d25] hover:border-[#4fb477]'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div>

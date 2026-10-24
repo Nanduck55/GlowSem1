@@ -2,7 +2,9 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../context/AppContext'
 import { PageTitle, Loading, padId } from '../admin/adminUi'
-import { panelCls, inputCls, btnPrimary, SeverityBadge } from './consultantUi'
+import { panelCls, inputCls, btnPrimary, btnOutline, SeverityBadge } from './consultantUi'
+import ExportButton from '../../components/ExportButton'
+import { buildRulesExport } from '../../api/exportData'
 
 export default function RulesList() {
   const navigate = useNavigate()
@@ -35,6 +37,14 @@ export default function RulesList() {
         <button className={`${btnPrimary} sm:!text-base sm:!px-6`} onClick={() => navigate('/consultant/rules/new')}>
           Create Rule
         </button>
+        <div className="col-span-2 sm:col-span-1">
+          <ExportButton
+            className={`${btnOutline} w-full sm:w-auto sm:!text-base sm:!px-6`}
+            filename="glowguard-clash-rules"
+            disabled={!dataLoaded}
+            getData={() => buildRulesExport(filtered)}
+          />
+        </div>
       </div>
 
       {!dataLoaded && <Loading />}
